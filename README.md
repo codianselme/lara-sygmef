@@ -11,6 +11,8 @@ Lara-Sygmef Package 🇧🇯
 [![Total Downloads](https://img.shields.io/packagist/dt/codianselme/lara-sygmef.svg?style=flat-square)](https://packagist.org/packages/codianselme/lara-sygmef)
 [![License](https://img.shields.io/packagist/l/codianselme/lara-sygmef.svg?style=flat-square)](https://packagist.org/packages/codianselme/lara-sygmef)
 
+> 📦 **Package disponible sur [Packagist](https://packagist.org/packages/codianselme/lara-sygmef)** - Installation simple via Composer !
+
 **Lara-Sygmef** est un package Laravel complet pour intégrer facilement l'API de facturation électronique **e-MECeF** du Bénin. Il offre une interface fluide pour gérer vos factures, confirmer les transactions et générer les codes QR réglementaires, le tout via une API propre ou un **Tableau de Bord prêt à l'emploi**.
 
 ---
