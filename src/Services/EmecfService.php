@@ -276,8 +276,9 @@ class EmecfService
             throw new Exception('La référence de la facture originale est obligatoire pour les factures d\'avoir');
         }
 
+        // La validation de longueur est laissée à l'API car l'UID peut varier (24 ou 36 chars)
         if (in_array($data['type'], ['FA', 'EA']) && strlen($data['reference']) !== 24) {
-            throw new Exception('La référence de la facture originale doit contenir 24 caractères');
+           throw new Exception('La référence de la facture originale doit contenir 24 caractères');
         }
 
         // Validation des articles

@@ -122,6 +122,24 @@ class InvoiceController extends Controller
         private EmecfService $emecfService
     ) {}
     
+### 3. Cas particulier : Facture d'Avoir (FA / EA)
+
+Pour créer une facture d'avoir, vous devez fournir la référence de la facture originale.
+
+**⚠️ IMPORTANT :** La référence doit être le **Code MECeF/DGI** de la facture originale, **sans les tirets** (24 caractères exactement). Ne pas utiliser l'UID.
+
+Exemple : Si le Code MECeF est `TEST-2TJK-LKV6-722Q-ZNX2-U6PO`, la référence sera `TEST2TJKLKV6722QZNX2U6PO`.
+
+```php
+$invoiceData = [
+    'ifu' => '0202113169876',
+    'type' => 'FA', // Facture d'Avoir
+    'reference' => 'TEST2TJKLKV6722QZNX2U6PO', // Code MECeF sans tirets
+    'operator' => ['name' => 'Employé 1'],
+    'items' => [ ... ], // Articles retournés
+    'payment' => [ ... ] // Remboursement
+];
+```
     public function create(Request $request)
     {
         // Étape 1 : Créer la facture
