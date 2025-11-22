@@ -17,10 +17,13 @@ Un package Laravel complet pour l'intégration de l'API e-MECeF (Module de contr
 
 Ce package permet de gérer les factures normalisées conformément aux exigences de la Direction Générale des Impôts (DGI) du Bénin. Il implémente la version 1.0 de l'API e-MECeF et offre :
 
-- Soumission, finalisation et annulation de factures
-- Calcul automatique des taxes (Groupes A-F)
-- Stockage local des transactions
-- Gestion des erreurs et retries automatiques
+- ✅ Soumission, finalisation et annulation de factures
+- ✅ Calcul automatique des taxes (Groupes A-F)
+- ✅ Stockage local des transactions
+- ✅ Gestion des erreurs et retries automatiques
+- ✅ **Dashboard web complet et professionnel** (nouveau !)
+- ✅ Génération automatique de QR codes
+- ✅ Processus en 2 étapes : Création → Confirmation
 
 ## 📦 Installation
 
@@ -158,7 +161,35 @@ Si vous avez publié les routes (`php artisan vendor:publish --tag=emecf-routes`
 | `PUT` | `/emecf/invoices/{uid}/finalize` | Finaliser (confirm/cancel) |
 | `GET` | `/emecf/invoices/{uid}/pending` | Détails facture en attente |
 
+## 🎨 Dashboard Web
+
+Le package inclut un **dashboard web complet et professionnel** pour gérer vos factures via une interface moderne.
+
+### Accès au Dashboard
+
+```bash
+# Publier les routes dashboard
+php artisan vendor:publish --tag=emecf-dashboard
+
+# Accéder au dashboard
+http://votre-app.test/emecf/dashboard
+```
+
+### Fonctionnalités du Dashboard
+
+- 📊 **Statistiques en temps réel** avec graphiques
+- 📄 **Gestion complète des factures** (liste, création, détails)
+- ✅ **Confirmation en un clic** avec génération du QR code
+- 🔍 **Filtres avancés** (statut, date, recherche)
+- 📱 **Design responsive** et moderne
+- 🎨 **Interface premium** avec animations
+
+### Documentation Complète
+
+Pour plus de détails sur le dashboard, consultez : [docs/DASHBOARD.md](docs/DASHBOARD.md)
+
 ## 🧪 Tests
+
 
 Pour lancer les tests du package :
 
