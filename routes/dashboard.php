@@ -31,6 +31,11 @@ Route::prefix('emecf')->name('emecf.dashboard.')->middleware('web')->group(funct
         ->name('confirm')
         ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         
+    // Route spéciale pour le mode Démo (Confirmation par UID sans ID local)
+    Route::post('/invoices/confirm-by-uid', [DashboardController::class, 'confirmByUid'])
+        ->name('confirm_by_uid')
+        ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
+        
     Route::post('/invoices/{id}/cancel', [DashboardController::class, 'cancel'])
         ->name('cancel')
         ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);

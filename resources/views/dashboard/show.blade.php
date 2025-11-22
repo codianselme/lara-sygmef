@@ -63,8 +63,29 @@
                     </form>
                 </div>
             @else
-                <div style="padding: 0.5rem 1rem; background: var(--warning); color: white; border-radius: 8px; font-size: 0.875rem;">
-                    ⚠️ Actions indisponibles (Non sauvegardée)
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="padding: 0.5rem 1rem; background: var(--warning); color: white; border-radius: 8px; font-size: 0.875rem;">
+                        ⚠️ Non sauvegardée (Mode Démo)
+                    </div>
+                    
+                    <form method="POST" action="{{ route('emecf.dashboard.confirm_by_uid') }}">
+                        @csrf
+                        <input type="hidden" name="uid" value="{{ $invoice->uid }}">
+                        <input type="hidden" name="ifu" value="{{ $invoice->ifu }}">
+                        <input type="hidden" name="type" value="{{ $invoice->type }}">
+                        <input type="hidden" name="operator_name" value="{{ $invoice->operator_name }}">
+                        <input type="hidden" name="client_name" value="{{ $invoice->client_name }}">
+                        <input type="hidden" name="client_contact" value="{{ $invoice->client_contact }}">
+                        <input type="hidden" name="total" value="{{ $invoice->total }}">
+                        <input type="hidden" name="hab" value="{{ $invoice->hab }}">
+                        <input type="hidden" name="vab" value="{{ $invoice->vab }}">
+                        <input type="hidden" name="items_json" value="{{ json_encode($invoice->items) }}">
+                        
+                        <button type="submit" class="btn btn-success">
+                            <span>✅</span>
+                            <span>Confirmer (Via API)</span>
+                        </button>
+                    </form>
                 </div>
             @endif
         @endif

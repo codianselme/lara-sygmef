@@ -75,7 +75,18 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('emecf.dashboard.show', $invoice->id) }}" class="btn btn-sm btn-primary">Détails</a>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <a href="{{ route('emecf.dashboard.show', $invoice->id) }}" class="btn btn-sm btn-primary">Détails</a>
+                                    
+                                    @if($invoice->status === 'pending')
+                                        <form method="POST" action="{{ route('emecf.dashboard.confirm', $invoice->id) }}" style="display: inline;">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-success" title="Confirmer maintenant">
+                                                ✅
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach

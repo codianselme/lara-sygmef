@@ -302,6 +302,64 @@ class DashboardController extends Controller
     }
 
     /**
+     * Confirmer une facture par UID (Mode Démo / Non persisté)
+     */
+    public function confirmByUid(Request $request)
+    {
+        $uid = $request->input('uid');
+        
+        if (!$uid) {
+            return back()->with('error', 'UID manquant.');
+        }
+
+        // Appel API
+        $result = $this->emecfService->finalizeInvoice($uid, 'confirm');
+
+        if (!$result['success']) {
+            return back()->with('error', $result['error']);
+        }
+
+        // Reconstruire l'objet facture confirmé pour l'affichage
+        $invoice = new EmecfInvoice();
+        $invoice->forceFill([
+            'uid' => $uid,
+            'ifu' => $request->input('ifu'),
+            'type' => $request->input('type'),
+            'operator_name' => $request->input('operator_name'),
+            'client_name' => $request->input('client_name'),
+            'client_contact' => $request->input('client_contact'),
+            'status' => 'confirmed',
+            'code_mec_ef_dgi' => $result['data']['codeMECeFDGI'] ?? null,
+            'qr_code' => $result['data']['qrCode'] ?? null,
+            'date_time' => $result['data']['dateTime'] ?? null,
+            'counters' => $result['data']['counters'] ?? null,
+            'nim' => $result['data']['nim'] ?? null,
+            'finalized_at' => now(),
+            'created_at' => now(), // Simulé
+            
+            // Montants (récupérés du formulaire ou par défaut)
+            'total' => $request->input('total', 0),
+            'hab' => $request->input('hab', 0),
+            'vab' => $request->input('vab', 0),
+        ]);
+        
+        // Reconstruire les items (simplifié pour la démo)
+        if ($request->has('items_json')) {
+            $itemsData = json_decode($request->input('items_json'), true);
+            if (is_array($itemsData)) {
+                $invoice->setRelation('items', collect($itemsData)->map(function($item) {
+                    $invoiceItem = new \Codianselme\LaraSygmef\Models\EmecfInvoiceItem();
+                    $invoiceItem->forceFill($item);
+                    return $invoiceItem;
+                }));
+            }
+        }
+
+        return view('emecf::dashboard.show', compact('invoice'))
+            ->with('success', 'Facture confirmée avec succès (Mode Démo) ! QR Code généré.');
+    }
+
+    /**
      * Annuler une facture
      */
     public function cancel($id)
