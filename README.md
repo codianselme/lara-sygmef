@@ -69,27 +69,109 @@ EMECF_TEST_MODE=true
 
 ## 🖥️ Tableau de Bord (Dashboard)
 
-Le package inclut un tableau de bord complet accessible via `/emecf/dashboard`.
+Le package inclut un tableau de bord complet et moderne accessible via `/emecf/dashboard`.
 
-### 1. Vue d'overview
-Accédez aux statistiques de vos ventes, graphiques mensuels et dernières factures.
+### Collection de Captures d'Écran
 
-![Tableau de Bord](docs/screenshots/01_dashboard.png)
+#### 1. 📊 Vue d'ensemble du Dashboard
 
-### 2. Création de Facture
-Un formulaire intuitif pour créer des factures de vente (FV) ou des avoirs (FA).
-*   **Calcul automatique** des totaux.
-*   **Gestion dynamique** des articles.
-*   **Support des Avoirs** : Le champ "Référence" apparaît automatiquement si vous choisissez "FA".
+Le tableau de bord principal affiche vos statistiques en temps réel avec des graphiques interactifs :
 
-![Création Facture](docs/screenshots/02_create_form.png)
+![Vue Dashboard 1](docs/screenshots/dashboard_1.png)
+![Vue Dashboard 2](docs/screenshots/dashboard_2.png)
 
-### 3. Confirmation & QR Code
-Après création, confirmez la facture pour obtenir le **Code MECeF/DGI** et le **QR Code** officiel.
+**Fonctionnalités :**
+- 📈 Graphiques mensuels des ventes
+- 💰 Statistiques de revenus
+- 📋 Liste des dernières factures
+- 🔍 Accès rapide aux actions
 
-![Détails Facture](docs/screenshots/03_details_pending.png)
-*(Après confirmation)*
-![Facture Confirmée](docs/screenshots/04_details_confirmed.png)
+---
+
+#### 2. 📝 Création d'une Facture de Vente (FV)
+
+Formulaire intuitif pour créer une nouvelle facture de vente :
+
+![Nouvelle Facture](docs/screenshots/nouvelle_facture.png)
+
+**Fonctionnalités :**
+- ✅ **Calcul automatique** des totaux TTC/TVA
+- ✅ **Gestion dynamique** des articles (ajout/suppression)
+- ✅ **Support multi-paiement** (Espèces, MTN, Moov, etc.)
+- ✅ **Validation en temps réel**
+
+---
+
+#### 3. ✔️ Confirmation de la Facture
+
+Après soumission, confirmez la facture pour générer les codes officiels :
+
+![Confirmation Facture](docs/screenshots/confirmation_facture.png)
+
+**Résultat :**
+- 🔐 **Code MECeF/DGI** généré
+- 📱 **QR Code** officiel
+- 📄 Facture enregistrée et validée
+
+---
+
+#### 4. 📄 Facture Générée et Détails
+
+Visualisation complète de la facture confirmée avec tous ses détails :
+
+![Facture Générée 1](docs/screenshots/facture_genere.png)
+![Facture Générée 2](docs/screenshots/facture_genere_2.png)
+
+**Informations affichées :**
+- Code MECeF/DGI et QR Code
+- Détails client et articles
+- Totaux et paiements
+- Statut de la facture
+
+---
+
+#### 5. 🔄 Création d'une Facture d'Avoir (FA)
+
+Pour annuler ou corriger une facture, créez une facture d'avoir :
+
+![Facture d'Avoir](docs/screenshots/facture_avoir.png)
+
+⚠️ **IMPORTANT** : Le champ **Référence** doit contenir le **Code MECeF/DGI** de la facture d'origine **SANS les tirets** (24 caractères).
+
+---
+
+#### 6. ✅ Confirmation de la Facture d'Avoir
+
+Confirmation de la facture d'avoir avec génération du code MECeF :
+
+![Confirmation Avoir](docs/screenshots/facture_avoir_confirmation.png)
+
+---
+
+#### 7. 📋 Facture d'Avoir Générée
+
+Visualisation de la facture d'avoir confirmée :
+
+![Avoir Généré](docs/screenshots/facture_avoir_generé.png)
+
+**Caractéristiques :**
+- ✅ Liaison automatique avec la facture d'origine
+- ✅ Code MECeF/DGI distinct
+- ✅ QR Code spécifique pour l'avoir
+
+---
+
+#### 8. 📑 Liste Complète des Factures
+
+Tableau récapitulatif de toutes vos factures avec filtres avancés :
+
+![Liste des Factures](docs/screenshots/liste_factures.png)
+
+**Fonctionnalités :**
+- 🔍 **Recherche** par numéro, client, montant
+- 🎯 **Filtres** par statut (en attente, confirmée, annulée)
+- 📅 **Tri** par date, montant
+- 👁️ **Actions rapides** (voir détails, confirmer, annuler)
 
 ---
 

@@ -26,7 +26,7 @@ curl -X POST http://localhost:8000/api/emecf/invoices \
     "ifu": "0202113169876",
     "type": "FV",
     "operator": {
-      "name": "JERIMO-YAMAH"
+      "name": "John Doe"
     },
     "client": {
       "name": "Client Example",

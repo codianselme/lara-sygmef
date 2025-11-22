@@ -23,7 +23,7 @@ RESPONSE=$(curl -s -X POST ${BASE_URL}/invoices \
     "ifu": "0202113169876",
     "type": "FV",
     "operator": {
-      "name": "JERIMO-YAMAH"
+      "name": "John Doe"
     },
     "client": {
       "name": "Client Test",

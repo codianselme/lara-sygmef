@@ -76,7 +76,7 @@
                 
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.875rem;">Opérateur *</label>
-                    <input type="text" name="operator_name" value="{{ old('operator_name', 'JERIMO-YAMAH') }}" required 
+                    <input type="text" name="operator_name" value="{{ old('operator_name', 'John Doe') }}" required 
                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--gray-light); border-radius: 8px; font-size: 1rem;"
                            placeholder="Nom de l'opérateur">
                 </div>

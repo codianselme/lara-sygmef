@@ -53,7 +53,7 @@ curl -X POST http://localhost:8001/api/emecf/invoices \
   -d '{
     "ifu": "0202113169876",
     "type": "FV",
-    "operator": {"name": "JERIMO-YAMAH"},
+    "operator": {"name": "John Doe"},
     "client": {"name": "Client Test"},
     "items": [{
       "name": "Produit Test",

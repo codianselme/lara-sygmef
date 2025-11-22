@@ -73,7 +73,7 @@ class EmecfService
             ? 'https://developper.impots.bj/sygmef-emcf/api/' 
             : 'https://sygmef.impots.bj/emcf/api/';
         
-        $this->token = config('emecf.token');
+        $this->token = config('emecf.token') ?? '';
         
         if (!$this->token) {
             throw new Exception('Token e-MECeF non configuré');
