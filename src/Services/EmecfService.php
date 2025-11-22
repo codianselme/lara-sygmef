@@ -146,7 +146,12 @@ class EmecfService
                 throw new Exception('L\'action doit être "confirm" ou "cancel"');
             }
 
-            $response = $this->client->put("invoice/{$uid}/{$action}");
+            $response = $this->client->put("invoice/{$uid}/{$action}", [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'Content-Length' => '0'
+                ]
+            ]);
             $data = json_decode($response->getBody()->getContents(), true);
             
             return [

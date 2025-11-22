@@ -63,35 +63,88 @@ EMECF_SAVE_LOGS=true
 
 ## 🎯 Utilisation
 
-### Via le Service
+### Processus Complet (2 Étapes)
+
+Le processus de facturation e-MECeF se déroule en **2 étapes** :
+
+#### Étape 1 : Création de la Facture (Statut: `pending`)
 
 ```php
 use Codianselme\LaraSygmef\Services\EmecfService;
 
 $emecf = app(EmecfService::class);
 
-// Vérifier le statut
-$status = $emecf->getInvoiceStatus();
-
-// Soumettre une facture
+// Données de la facture
 $invoiceData = [
-    'ifu' => '1234567890123',
+    'ifu' => '0202113169876',
     'type' => 'FV',
-    'operator' => ['name' => 'Mon Entreprise'],
+    'operator' => ['name' => 'JERIMO-YAMAH'],
+    'client' => [
+        'name' => 'Client Example',
+        'contact' => '+22997000000'
+    ],
     'items' => [
         [
             'name' => 'Produit A',
-            'price' => 10000,
+            'price' => 5000,
             'quantity' => 2,
             'taxGroup' => 'B'
         ]
     ],
     'payment' => [
-        ['name' => 'ESPECES', 'amount' => 20000]
+        ['name' => 'ESPECES', 'amount' => 11800]
     ]
 ];
 
+// Soumettre la facture
 $result = $emecf->submitInvoice($invoiceData);
+
+if ($result['success']) {
+    $uid = $result['data']['uid'];
+    $total = $result['data']['total'];
+    // Statut : 'pending' - en attente de confirmation
+}
+```
+
+#### Étape 2 : Confirmation et Récupération du QR Code
+
+```php
+// Confirmer la facture pour obtenir le QR code
+$confirmation = $emecf->finalizeInvoice($uid, 'confirm');
+
+if ($confirmation['success']) {
+    $qrCode = $confirmation['data']['qrCode'];
+    $codeMECeF = $confirmation['data']['codeMECeFDGI'];
+    $dateTime = $confirmation['data']['dateTime'];
+    $counters = $confirmation['data']['counters'];
+    $nim = $confirmation['data']['nim'];
+    
+    // Le QR code est maintenant disponible pour l'impression sur la facture
+    // Format : "F;{NIM};{CODE_COURT};{IFU};{DATETIME}"
+}
+```
+
+#### Annulation d'une Facture
+
+```php
+// Annuler une facture en attente
+$cancellation = $emecf->finalizeInvoice($uid, 'cancel');
+```
+
+### Autres Opérations
+
+```php
+// Vérifier le statut de l'API
+$status = $emecf->getInvoiceStatus();
+
+// Récupérer les groupes de taxation
+$taxGroups = $emecf->getTaxGroups();
+
+// Récupérer les types de factures
+$invoiceTypes = $emecf->getInvoiceTypes();
+
+// Récupérer les types de paiement
+$paymentTypes = $emecf->getPaymentTypes();
 ```
 
 ### Via les Routes API
