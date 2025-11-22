@@ -131,6 +131,7 @@ class DashboardController extends Controller
         $validated = $request->validate([
             'ifu' => 'required|string|size:13',
             'type' => 'required|in:FV,EV,FA,EA',
+            'reference' => 'required_if:type,FA,EA|nullable|string|size:24',
             'operator_name' => 'required|string|max:255',
             'client_name' => 'nullable|string|max:255',
             'client_contact' => 'nullable|string|max:255',
@@ -149,6 +150,10 @@ class DashboardController extends Controller
                 'operator' => ['name' => $validated['operator_name']],
                 'items' => $validated['items'],
             ];
+
+            if (in_array($validated['type'], ['FA', 'EA'])) {
+                $invoiceData['reference'] = $validated['reference'];
+            }
 
             if (!empty($validated['client_name'])) {
                 $invoiceData['client'] = [
@@ -181,6 +186,7 @@ class DashboardController extends Controller
                     'uid' => $result['data']['uid'],
                     'ifu' => $validated['ifu'],
                     'type' => $validated['type'],
+                    'reference' => $validated['reference'] ?? null,
                     'operator_name' => $validated['operator_name'],
                     'client_name' => $validated['client_name'] ?? null,
                     'client_contact' => $validated['client_contact'] ?? null,
@@ -223,6 +229,7 @@ class DashboardController extends Controller
                     'uid' => $result['data']['uid'],
                     'ifu' => $validated['ifu'],
                     'type' => $validated['type'],
+                    'reference' => $validated['reference'] ?? null,
                     'operator_name' => $validated['operator_name'],
                     'client_name' => $validated['client_name'] ?? null,
                     'client_contact' => $validated['client_contact'] ?? null,

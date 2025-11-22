@@ -53,13 +53,25 @@
                 
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.875rem;">Type de Facture *</label>
-                    <select name="type" required 
+                    <select name="type" x-model="type" required 
                             style="width: 100%; padding: 0.75rem; border: 2px solid var(--gray-light); border-radius: 8px; font-size: 1rem;">
-                        <option value="FV" {{ old('type') == 'FV' ? 'selected' : '' }}>FV - Facture de vente</option>
-                        <option value="FA" {{ old('type') == 'FA' ? 'selected' : '' }}>FA - Facture d'avoir</option>
-                        <option value="EV" {{ old('type') == 'EV' ? 'selected' : '' }}>EV - Vente export</option>
-                        <option value="EA" {{ old('type') == 'EA' ? 'selected' : '' }}>EA - Avoir export</option>
+                        <option value="FV">FV - Facture de vente</option>
+                        <option value="FA">FA - Facture d'avoir</option>
+                        <option value="EV">EV - Vente export</option>
+                        <option value="EA">EA - Avoir export</option>
                     </select>
+                </div>
+
+                <div x-show="['FA', 'EA'].includes(type)" style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.875rem;">
+                        Référence Facture Originale * 
+                        <span style="font-weight: 400; color: var(--gray); font-size: 0.75rem;">(Code MECeF sans tirets, 24 caractères)</span>
+                    </label>
+                    <input type="text" name="reference" 
+                           style="width: 100%; padding: 0.75rem; border: 2px solid var(--warning); border-radius: 8px; font-size: 1rem;"
+                           placeholder="Ex: TEST2TJKLKV6722QZNX2U6PO"
+                           :required="['FA', 'EA'].includes(type)"
+                           minlength="24" maxlength="24">
                 </div>
                 
                 <div>
@@ -180,6 +192,7 @@
 <script>
     function invoiceForm() {
         return {
+            type: '{{ old('type', 'FV') }}',
             items: [
                 { name: '', price: 0, quantity: 1, taxGroup: 'B' }
             ],
