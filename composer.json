@@ -1,0 +1,52 @@
+{
+    "name": "codianselme/lara-sygmef",
+    "description": "Service e-MECeF pour Laravel - Int\u00e9gration API DGI B\u00e9nin",
+    "type": "library",
+    "version": "1.0.0",
+    "keywords": [
+        "laravel",
+        "emecf",
+        "dgi",
+        "benin",
+        "invoice",
+        "tax"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anselme",
+            "email": "contact@codianselme.dev"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^7.0|^8.0|^9.0|^10.0|^11.0",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0|^10.0",
+        "orchestra/testbench": "^7.0|^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Codianselme\\LaraSygmef\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Codianselme\\LaraSygmef\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Codianselme\\LaraSygmef\\Providers\\EmecfServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    }
+}

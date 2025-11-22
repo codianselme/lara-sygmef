@@ -1,0 +1,8 @@
+providers:
+  - Codianselme\LaraSygmef\Providers\EmecfServiceProvider
+
+env:
+  DB_CONNECTION: sqlite
+  DB_DATABASE: database.sqlite
+
+
