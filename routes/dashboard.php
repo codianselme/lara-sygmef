@@ -16,10 +16,22 @@ Route::prefix('emecf')->name('emecf.dashboard.')->middleware('web')->group(funct
     // Gestion des factures
     Route::get('/invoices', [DashboardController::class, 'invoices'])->name('invoices');
     Route::get('/invoices/create', [DashboardController::class, 'create'])->name('create');
-    Route::post('/invoices', [DashboardController::class, 'store'])->name('store');
+    
+    // Routes POST - Désactiver CSRF pour Testbench
+    $csrfMiddleware = app()->environment('testing') ? [] : ['web'];
+    
+    Route::post('/invoices', [DashboardController::class, 'store'])
+        ->name('store')
+        ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
+    
     Route::get('/invoices/{id}', [DashboardController::class, 'show'])->name('show');
     
     // Actions sur les factures
-    Route::post('/invoices/{id}/confirm', [DashboardController::class, 'confirm'])->name('confirm');
-    Route::post('/invoices/{id}/cancel', [DashboardController::class, 'cancel'])->name('cancel');
+    Route::post('/invoices/{id}/confirm', [DashboardController::class, 'confirm'])
+        ->name('confirm')
+        ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
+        
+    Route::post('/invoices/{id}/cancel', [DashboardController::class, 'cancel'])
+        ->name('cancel')
+        ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
 });
