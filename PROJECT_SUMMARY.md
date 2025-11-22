@@ -226,7 +226,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 ## 📞 Support
 
 - **GitHub** : [codianselme/lara-sygmef](https://github.com/codianselme/lara-sygmef)
-- **Email** : contact@codianselme.dev
+- **Email** : codianselme@gmail.com
 - **Issues** : Utilisez GitHub Issues
 
 ---

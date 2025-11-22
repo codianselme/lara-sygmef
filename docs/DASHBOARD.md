@@ -232,7 +232,7 @@ Le dashboard est extensible ! Vous pouvez ajouter :
 ## 📞 Support
 
 Pour toute question sur le dashboard :
-- 📧 Email : contact@codianselme.dev
+- 📧 Email : codianselme@gmail.com
 - 🐛 Issues : [GitHub](https://github.com/codianselme/lara-sygmef/issues)
 
 ---
