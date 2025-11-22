@@ -19,33 +19,48 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // Statistiques
-        $stats = [
-            'total' => EmecfInvoice::count(),
-            'pending' => EmecfInvoice::where('status', 'pending')->count(),
-            'confirmed' => EmecfInvoice::where('status', 'confirmed')->count(),
-            'cancelled' => EmecfInvoice::where('status', 'cancelled')->count(),
-            'total_amount' => EmecfInvoice::where('status', 'confirmed')->sum('total'),
-            'today' => EmecfInvoice::whereDate('created_at', today())->count(),
-        ];
+        try {
+            // Statistiques
+            $stats = [
+                'total' => EmecfInvoice::count(),
+                'pending' => EmecfInvoice::where('status', 'pending')->count(),
+                'confirmed' => EmecfInvoice::where('status', 'confirmed')->count(),
+                'cancelled' => EmecfInvoice::where('status', 'cancelled')->count(),
+                'total_amount' => EmecfInvoice::where('status', 'confirmed')->sum('total'),
+                'today' => EmecfInvoice::whereDate('created_at', today())->count(),
+            ];
 
-        // Factures récentes
-        $recentInvoices = EmecfInvoice::with(['items', 'payments'])
-            ->latest()
-            ->take(10)
-            ->get();
+            // Factures récentes
+            $recentInvoices = EmecfInvoice::with(['items', 'payments'])
+                ->latest()
+                ->take(10)
+                ->get();
 
-        // Statistiques par mois (6 derniers mois)
-        $monthlyStats = EmecfInvoice::select(
-            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
-            DB::raw('COUNT(*) as count'),
-            DB::raw('SUM(total) as total')
-        )
-            ->where('created_at', '>=', now()->subMonths(6))
-            ->where('status', 'confirmed')
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+            // Statistiques par mois (6 derniers mois)
+            $monthlyStats = EmecfInvoice::select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(total) as total')
+            )
+                ->where('created_at', '>=', now()->subMonths(6))
+                ->where('status', 'confirmed')
+                ->groupBy('month')
+                ->orderBy('month')
+                ->get();
+        } catch (\Exception $e) {
+            // Mode démo si la base de données n'est pas disponible
+            $stats = [
+                'total' => 0,
+                'pending' => 0,
+                'confirmed' => 0,
+                'cancelled' => 0,
+                'total_amount' => 0,
+                'today' => 0,
+            ];
+            
+            $recentInvoices = collect([]);
+            $monthlyStats = collect([]);
+        }
 
         return view('emecf::dashboard.index', compact('stats', 'recentInvoices', 'monthlyStats'));
     }
@@ -55,32 +70,37 @@ class DashboardController extends Controller
      */
     public function invoices(Request $request)
     {
-        $query = EmecfInvoice::with(['items', 'payments']);
+        try {
+            $query = EmecfInvoice::with(['items', 'payments']);
 
-        // Filtres
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            // Filtres
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('uid', 'like', "%{$search}%")
+                      ->orWhere('ifu', 'like', "%{$search}%")
+                      ->orWhere('client_name', 'like', "%{$search}%")
+                      ->orWhere('operator_name', 'like', "%{$search}%");
+                });
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            $invoices = $query->latest()->paginate(15);
+        } catch (\Exception $e) {
+            // Mode démo
+            $invoices = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
         }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('uid', 'like', "%{$search}%")
-                  ->orWhere('ifu', 'like', "%{$search}%")
-                  ->orWhere('client_name', 'like', "%{$search}%")
-                  ->orWhere('operator_name', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
-        }
-
-        $invoices = $query->latest()->paginate(15);
 
         return view('emecf::dashboard.invoices', compact('invoices'));
     }
