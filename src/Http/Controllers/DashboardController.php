@@ -218,7 +218,8 @@ class DashboardController extends Controller
                 DB::rollBack();
                 
                 // Créer une instance temporaire pour l'affichage
-                $invoice = new EmecfInvoice([
+                $invoice = new EmecfInvoice();
+                $invoice->forceFill([
                     'uid' => $result['data']['uid'],
                     'ifu' => $validated['ifu'],
                     'type' => $validated['type'],
@@ -246,7 +247,14 @@ class DashboardController extends Controller
                 
                 // Ajouter les items manuellement à l'instance (relation non persistée)
                 $invoice->setRelation('items', collect($validated['items'])->map(function($item) {
-                    return new \Codianselme\LaraSygmef\Models\EmecfInvoiceItem($item);
+                    $invoiceItem = new \Codianselme\LaraSygmef\Models\EmecfInvoiceItem();
+                    $invoiceItem->forceFill([
+                        'name' => $item['name'],
+                        'price' => $item['price'],
+                        'quantity' => $item['quantity'],
+                        'tax_group' => $item['taxGroup'], // Mapping correct
+                    ]);
+                    return $invoiceItem;
                 }));
 
                 return view('emecf::dashboard.show', compact('invoice'))
