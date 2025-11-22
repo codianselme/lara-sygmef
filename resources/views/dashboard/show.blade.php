@@ -43,24 +43,30 @@
         </div>
         
         @if($invoice->status === 'pending')
-            <div style="display: flex; gap: 1rem;">
-                <form method="POST" action="{{ route('emecf.dashboard.confirm', $invoice->id) }}">
-                    @csrf
-                    <button type="submit" class="btn btn-success">
-                        <span>✅</span>
-                        <span>Confirmer</span>
-                    </button>
-                </form>
-                
-                <form method="POST" action="{{ route('emecf.dashboard.cancel', $invoice->id) }}" 
-                      onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette facture ?')">
-                    @csrf
-                    <button type="submit" class="btn btn-danger">
-                        <span>❌</span>
-                        <span>Annuler</span>
-                    </button>
-                </form>
-            </div>
+            @if($invoice->id)
+                <div style="display: flex; gap: 1rem;">
+                    <form method="POST" action="{{ route('emecf.dashboard.confirm', $invoice->id) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-success">
+                            <span>✅</span>
+                            <span>Confirmer</span>
+                        </button>
+                    </form>
+                    
+                    <form method="POST" action="{{ route('emecf.dashboard.cancel', $invoice->id) }}" 
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette facture ?')">
+                        @csrf
+                        <button type="submit" class="btn btn-danger">
+                            <span>❌</span>
+                            <span>Annuler</span>
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div style="padding: 0.5rem 1rem; background: var(--warning); color: white; border-radius: 8px; font-size: 0.875rem;">
+                    ⚠️ Actions indisponibles (Non sauvegardée)
+                </div>
+            @endif
         @endif
     </div>
 </div>

@@ -213,12 +213,44 @@ class DashboardController extends Controller
                 return redirect()->route('emecf.dashboard.show', $invoice->id)
                     ->with('success', 'Facture créée avec succès !');
             } catch (\Exception $dbError) {
-                // Mode démo : La base de données n'est pas disponible
-                // Mais l'API a bien créé la facture
+                // Mode démo ou Erreur DB : La base de données n'est pas disponible
+                // Mais l'API a bien créé la facture, on veut donc l'afficher !
                 DB::rollBack();
                 
-                return redirect()->route('emecf.dashboard.index')
-                    ->with('success', 'Facture créée avec succès sur l\'API e-MECeF ! (UID: ' . ($result['data']['uid'] ?? 'N/A') . ') - Mode démo : base de données non disponible.');
+                // Créer une instance temporaire pour l'affichage
+                $invoice = new EmecfInvoice([
+                    'uid' => $result['data']['uid'],
+                    'ifu' => $validated['ifu'],
+                    'type' => $validated['type'],
+                    'operator_name' => $validated['operator_name'],
+                    'client_name' => $validated['client_name'] ?? null,
+                    'client_contact' => $validated['client_contact'] ?? null,
+                    'ta' => $result['data']['ta'] ?? 0,
+                    'tb' => $result['data']['tb'] ?? 0,
+                    'tc' => $result['data']['tc'] ?? 0,
+                    'td' => $result['data']['td'] ?? 0,
+                    'taa' => $result['data']['taa'] ?? 0,
+                    'tab' => $result['data']['tab'] ?? 0,
+                    'tac' => $result['data']['tac'] ?? 0,
+                    'tad' => $result['data']['tad'] ?? 0,
+                    'tae' => $result['data']['tae'] ?? 0,
+                    'taf' => $result['data']['taf'] ?? 0,
+                    'hab' => $result['data']['hab'] ?? 0,
+                    'had' => $result['data']['had'] ?? 0,
+                    'vab' => $result['data']['vab'] ?? 0,
+                    'vad' => $result['data']['vad'] ?? 0,
+                    'total' => $result['data']['total'] ?? $total,
+                    'status' => 'pending',
+                    'created_at' => now(),
+                ]);
+                
+                // Ajouter les items manuellement à l'instance (relation non persistée)
+                $invoice->setRelation('items', collect($validated['items'])->map(function($item) {
+                    return new \Codianselme\LaraSygmef\Models\EmecfInvoiceItem($item);
+                }));
+
+                return view('emecf::dashboard.show', compact('invoice'))
+                    ->with('success', 'Facture créée sur l\'API e-MECeF ! (Note: Non sauvegardée localement - ' . $dbError->getMessage() . ')');
             }
 
         } catch (\Exception $e) {
