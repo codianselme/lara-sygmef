@@ -1,10 +1,10 @@
 {
-    "name": "pouet1/pouet2",
-    "description": "pouet4Service e-MECeF pour Laravel - Int\u00e9gration API DGI B\u00e9nin",
+    "name": "pouet11/pouet12",
+    "description": "Service e-MECeF pour Laravel - Int\u00e9gration API DGI B\u00e9nin",
     "type": "library",
     "keywords": [
         "laravel",
-        "pouet3",
+        "emecf",
         "dgi",
         "benin",
         "invoice",
@@ -13,8 +13,8 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "pouet5Anselme",
-            "email": "pouet6codianselme@gmail.com"
+            "name": "Anselme",
+            "email": "codianselme@gmail.com"
         }
     ],
     "require": {
@@ -28,24 +28,24 @@
     },
     "autoload": {
         "psr-4": {
-            "Codianselme\\LaraSygmef\\": "src/pouet5"
+            "Codianselme\\LaraSygmef\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Codianselme\\LaraSygmef\\Tests\\": "tests/pouet6"
+            "Codianselme\\LaraSygmef\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Codianselme\\LaraSygmef\\Providers\\EmecfServiceProvider\\pouet7"
+                "Codianselme\\LaraSygmef\\Providers\\EmecfServiceProvider"
             ]
         }
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "scripts": {
-        "test": "vendor/bin/phpunit/pouet8"
+        "test": "vendor/bin/phpunit"
     }
 }
