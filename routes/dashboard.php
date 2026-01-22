@@ -24,10 +24,13 @@ Route::prefix('emecf')->name('emecf.dashboard.')->middleware('web')->group(funct
         ->name('store')
         ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
     
-    Route::get('/invoices/{id}', [DashboardController::class, 'show'])->name('show');
+    Route::get('/invoices/{id}', [DashboardController::class, 'show'])
+        ->where('id', '[0-9]+')
+        ->name('show');
     
     // Actions sur les factures
     Route::post('/invoices/{id}/confirm', [DashboardController::class, 'confirm'])
+        ->where('id', '[0-9]+')
         ->name('confirm')
         ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         
@@ -37,6 +40,7 @@ Route::prefix('emecf')->name('emecf.dashboard.')->middleware('web')->group(funct
         ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         
     Route::post('/invoices/{id}/cancel', [DashboardController::class, 'cancel'])
+        ->where('id', '[0-9]+')
         ->name('cancel')
         ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
 });
