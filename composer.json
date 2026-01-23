@@ -1,6 +1,6 @@
 {
     "name": "codianselme/lara-sygmef",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "description": "Service e-MECeF pour Laravel - Int\u00e9gration API DGI B\u00e9nin",
     "type": "library",
     "keywords": [
