@@ -46,7 +46,7 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.875rem;">IFU *</label>
-                    <input type="text" name="ifu" value="{{ old('ifu', '0202113169876') }}" required 
+                    <input type="text" name="ifu" value="{{ old('ifu', config('emecf.default_ifu')) }}" required 
                            style="width: 100%; padding: 0.75rem; border: 2px solid var(--gray-light); border-radius: 8px; font-size: 1rem;"
                            placeholder="1234567890123">
                 </div>

@@ -65,6 +65,55 @@ EMECF_API_TOKEN=votre_token_ici
 
 # Mode Test (true pour Sandbox, false pour Production)
 EMECF_TEST_MODE=true
+
+# IFU par défaut pour les factures (13 caractères, obligatoire)
+SGMEF_DEFAULT_IFU=0202113169876
+
+# Opérateur par défaut
+SGMEF_DEFAULT_OPERATOR_NAME="Opérateur Principal"
+
+# Autres paramètres optionnels
+SGMEF_API_URL=https://developper.impots.bj/sygmef-emcf/api
+SGMEF_TOKEN="votre_token_ici"
+RCCM="11-B-7629"
+
+# Timeouts et retry
+EMECF_TIMEOUT=30
+EMECF_CONNECT_TIMEOUT=10
+EMECF_RETRY=3
+EMECF_RETRY_DELAY=1000
+
+# Persistence en base de données
+EMECF_SAVE_INVOICES=true
+EMECF_SAVE_LOGS=true
+EMECF_LOG_LEVEL=error
+```
+
+### 📌 Important : Configuration de l'IFU
+
+L'**IFU (Identifiant Fiscal Unique)** est maintenant **configurable via `.env`** :
+
+```dotenv
+# ✅ Correct - Configuration via .env
+SGMEF_DEFAULT_IFU=0202113169876
+```
+
+**L'IFU ne doit JAMAIS être codé en dur dans le code !**
+
+#### Récupérer l'IFU en code
+
+```php
+// Dans les contrôleurs ou services
+$ifu = config('emecf.default_ifu');
+
+// Ou directement depuis .env
+$ifu = env('SGMEF_DEFAULT_IFU', '0202113169876');
+```
+
+#### Utiliser l'IFU dans les vues Blade
+
+```blade
+<input type="text" name="ifu" value="{{ config('emecf.default_ifu') }}">
 ```
 
 ---
@@ -188,8 +237,11 @@ use Codianselme\LaraSygmef\Services\EmecfService;
 
 public function createInvoice(EmecfService $service)
 {
+    // ✅ Récupérer l'IFU depuis la configuration
+    $ifu = config('emecf.default_ifu');
+    
     $data = [
-        'ifu' => '0202113169876',
+        'ifu' => $ifu, // Utilise la configuration .env
         'type' => 'FV', // Facture de Vente
         'operator' => ['name' => 'John Doe'], // Nom de l'opérateur caisse
         'client' => [
@@ -239,16 +291,46 @@ Pour annuler ou corriger une facture, créez une **Facture d'Avoir**.
 ⚠️ **IMPORTANT** : Le champ `reference` doit contenir le **Code MECeF/DGI** de la facture d'origine, **SANS les tirets** (24 caractères).
 
 ```php
-$data = [
-    'ifu' => '0202113169876',
-    'type' => 'FA', // Facture d'Avoir
-    'reference' => 'TEST2TJKLKV6722QZNX2U6PO', // Code MECeF sans tirets !
-    'operator' => ['name' => 'John Doe'],
-    'items' => [ ... ], // Articles retournés
-    'payment' => [ ... ]
-];
+use Codianselme\LaraSygmef\Services\EmecfService;
 
-    // Format : "F;{NIM};{CODE_COURT};{IFU};{DATETIME}"
+public function createCreditNote(EmecfService $service)
+{
+    // ✅ Récupérer l'IFU depuis la configuration
+    $ifu = config('emecf.default_ifu');
+    
+    $data = [
+        'ifu' => $ifu, // Utilise la configuration .env
+        'type' => 'FA', // Facture d'Avoir
+        'reference' => 'TEST2TJKLKV6722QZNX2U6PO', // Code MECeF sans tirets !
+        'operator' => ['name' => 'John Doe'],
+        'items' => [ 
+            // Articles retournés (même format que FV)
+            [
+                'name' => 'Article 1',
+                'price' => 10000,
+                'quantity' => 1,
+                'taxGroup' => 'B'
+            ]
+        ],
+        'payment' => [ 
+            ['name' => 'ESPECES', 'amount' => 10000]
+        ]
+    ];
+
+    $result = $service->submitInvoice($data);
+
+    if ($result['success']) {
+        $uid = $result['data']['uid'];
+        
+        // Confirmer l'avoir
+        $confirmResult = $service->finalizeInvoice($uid, 'confirm');
+        
+        if ($confirmResult['success']) {
+            return $confirmResult['data'];
+        }
+    }
+    
+    return null;
 }
 ```
 

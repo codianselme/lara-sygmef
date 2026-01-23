@@ -16,6 +16,8 @@ return [
 
     "token" => env("EMECF_TOKEN"),
 
+    "default_ifu" => env("SGMEF_DEFAULT_IFU", "0000000000000"),
+
     "urls" => [
         "test" => [
             "invoice" => "https://developper.impots.bj/sygmef-emcf/api/",
