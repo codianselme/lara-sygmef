@@ -4,26 +4,38 @@ namespace Codianselme\LaraSygmef\Http\Controllers;
 
 use Codianselme\LaraSygmef\Services\EmecfService;
 use Codianselme\LaraSygmef\Models\EmecfInvoice;
+use Codianselme\LaraSygmef\Enums\InvoiceStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use Illuminate\Validation\ValidationException;
-
 use Illuminate\Routing\Controller;
 
+/**
+ * Contrôleur pour gérer les requêtes e-MECeF.
+ */
 class EmecfController extends Controller
 {
+    /**
+     * @var EmecfService Le service e-MECeF.
+     */
     private EmecfService $emecfService;
 
+    /**
+     * Constructeur du contrôleur.
+     *
+     * @param EmecfService $emecfService Le service e-MECeF.
+     */
     public function __construct(EmecfService $emecfService)
     {
         $this->emecfService = $emecfService;
     }
 
     /**
-     * Obtenir le statut de l'API de facturation
+     * Obtenir le statut de l'API de facturation.
+     *
+     * @return JsonResponse La réponse JSON.
      */
     public function getInvoiceStatus(): JsonResponse
     {
@@ -47,12 +59,16 @@ class EmecfController extends Controller
     }
 
     /**
-     * Soumettre une nouvelle facture
+     * Soumettre une nouvelle facture.
+     *
+     * @param Request $request La requête HTTP.
+     * @return JsonResponse La réponse JSON.
+     * @throws ValidationException Si la validation échoue.
      */
     public function submitInvoice(Request $request): JsonResponse
     {
         try {
-            $validatedData = $request->validate([
+            $validatedData = (array) $request->validate([
                 'ifu' => 'required|string|size:13',
                 'aib' => 'nullable|in:A,B',
                 'type' => 'required|in:FV,EV,FA,EA',
@@ -79,13 +95,11 @@ class EmecfController extends Controller
                 'payment.*.amount' => 'required|integer|min:0'
             ]);
 
-            DB::beginTransaction();
-
-            // Soumettre la facture à l'API e-MECeF
+            // Soumettre la facture via le service
+            // Le service gère désormais la sauvegarde automatique si configuré
             $result = $this->emecfService->submitInvoice($validatedData);
 
             if (!$result['success']) {
-                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'error' => $result['error'],
@@ -94,82 +108,14 @@ class EmecfController extends Controller
                 ], 400);
             }
 
-            // Sauvegarder la facture en base de données
-            $invoiceData = $result['data'];
-            $invoice = EmecfInvoice::create([
-                'uid' => $invoiceData['uid'],
-                'ifu' => $validatedData['ifu'],
-                'aib' => $validatedData['aib'] ?? null,
-                'type' => $validatedData['type'],
-                'reference' => $validatedData['reference'] ?? null,
-                'operator_id' => $validatedData['operator']['id'] ?? null,
-                'operator_name' => $validatedData['operator']['name'],
-                'client_ifu' => $validatedData['client']['ifu'] ?? null,
-                'client_name' => $validatedData['client']['name'] ?? null,
-                'client_contact' => $validatedData['client']['contact'] ?? null,
-                'client_address' => $validatedData['client']['address'] ?? null,
-                'ta' => $invoiceData['ta'] ?? 0,
-                'tb' => $invoiceData['tb'] ?? 0,
-                'tc' => $invoiceData['tc'] ?? 0,
-                'td' => $invoiceData['td'] ?? 0,
-                'taa' => $invoiceData['taa'] ?? 0,
-                'tab' => $invoiceData['tab'] ?? 0,
-                'tac' => $invoiceData['tac'] ?? 0,
-                'tad' => $invoiceData['tad'] ?? 0,
-                'tae' => $invoiceData['tae'] ?? 0,
-                'taf' => $invoiceData['taf'] ?? 0,
-                'hab' => $invoiceData['hab'] ?? 0,
-                'had' => $invoiceData['had'] ?? 0,
-                'vab' => $invoiceData['vab'] ?? 0,
-                'vad' => $invoiceData['vad'] ?? 0,
-                'aib_amount' => $invoiceData['aib'] ?? 0,
-                'ts' => $invoiceData['ts'] ?? 0,
-                'total' => $invoiceData['total'] ?? 0,
-                'status' => EmecfInvoice::STATUS_PENDING,
-                'submitted_at' => now(),
-            ]);
-
-            // Sauvegarder les articles
-            foreach ($validatedData['items'] as $item) {
-                $invoice->items()->create([
-                    'code' => $item['code'] ?? null,
-                    'name' => $item['name'],
-                    'price' => $item['price'],
-                    'quantity' => $item['quantity'],
-                    'tax_group' => $item['taxGroup'],
-                    'tax_specific' => $item['taxSpecific'] ?? null,
-                    'original_price' => $item['originalPrice'] ?? null,
-                    'price_modification' => $item['priceModification'] ?? null,
-                ]);
-            }
-
-            // Sauvegarder les paiements
-            if (isset($validatedData['payment'])) {
-                foreach ($validatedData['payment'] as $payment) {
-                    $invoice->payments()->create([
-                        'name' => $payment['name'],
-                        'amount' => $payment['amount'],
-                    ]);
-                }
-            }
-
-            DB::commit();
-
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'invoice_id' => $invoice->id,
-                    'uid' => $invoice->uid,
-                    'status' => $invoice->status,
-                    'total' => $invoice->total,
-                    'calculated_amounts' => $invoiceData
-                ]
+                'data' => $result['data']
             ], 201);
 
         } catch (ValidationException $e) {
             throw $e;
         } catch (Exception $e) {
-            DB::rollBack();
             Log::error('e-MECeF Submit Invoice Error', [
                 'error' => $e->getMessage(),
                 'data' => $request->all()
@@ -183,33 +129,28 @@ class EmecfController extends Controller
     }
 
     /**
-     * Finaliser une facture (confirmer ou annuler)
+     * Finaliser une facture (confirmer ou annuler).
+     *
+     * @param Request $request La requête HTTP.
+     * @param string $uid L'identifiant unique de la facture.
+     * @return JsonResponse La réponse JSON.
+     * @throws ValidationException Si la validation échoue.
      */
     public function finalizeInvoice(Request $request, string $uid): JsonResponse
     {
         try {
-            $validatedData = $request->validate([
+            $validatedData = (array) $request->validate([
                 'action' => 'required|in:confirm,cancel'
             ]);
 
-            $invoice = EmecfInvoice::where('uid', $uid)->firstOrFail();
+            /** @var string $action */
+            $action = $validatedData['action'];
 
-            if ($invoice->status !== EmecfInvoice::STATUS_PENDING) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Cette facture ne peut plus être finalisée'
-                ], 400);
-            }
-
-            // Finaliser via l'API e-MECeF
-            $result = $this->emecfService->finalizeInvoice($uid, $validatedData['action']);
+            // Finaliser via le service
+            // Le service gère désormais la mise à jour automatique de la facture locale si configuré
+            $result = $this->emecfService->finalizeInvoice($uid, $action);
 
             if (!$result['success']) {
-                $invoice->markAsError(
-                    $result['error_code'] ?? 'UNKNOWN',
-                    $result['error'] ?? 'Erreur inconnue'
-                );
-
                 return response()->json([
                     'success' => false,
                     'error' => $result['error'],
@@ -218,21 +159,9 @@ class EmecfController extends Controller
                 ], 400);
             }
 
-            // Mettre à jour la facture locale
-            if ($validatedData['action'] === 'confirm') {
-                $invoice->markAsConfirmed($result['data']);
-            } else {
-                $invoice->markAsCancelled();
-            }
-
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'invoice_id' => $invoice->id,
-                    'uid' => $invoice->uid,
-                    'status' => $invoice->status,
-                    'security_elements' => $result['data'] ?? null
-                ]
+                'data' => $result['data']
             ]);
 
         } catch (ValidationException $e) {
@@ -251,23 +180,15 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les détails d'une facture en attente
+     * Obtenir les détails d'une facture en attente.
+     *
+     * @param string $uid L'identifiant unique de la facture.
+     * @return JsonResponse La réponse JSON.
      */
     public function getPendingInvoiceDetails(string $uid): JsonResponse
     {
         try {
-            $invoice = EmecfInvoice::with(['items', 'payments'])
-                ->where('uid', $uid)
-                ->firstOrFail();
-
-            if ($invoice->status !== EmecfInvoice::STATUS_PENDING) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Cette facture n\'est pas en attente'
-                ], 400);
-            }
-
-            // Récupérer les détails depuis l'API e-MECeF
+            // Récupérer les détails depuis l'API e-MECeF via le service
             $result = $this->emecfService->getPendingInvoiceDetails($uid);
 
             if (!$result['success']) {
@@ -280,10 +201,7 @@ class EmecfController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'local_invoice' => $invoice,
-                    'api_details' => $result['data']
-                ]
+                'data' => $result['data']
             ]);
 
         } catch (Exception $e) {
@@ -300,7 +218,9 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les informations sur les e-MCF
+     * Obtenir les informations sur les e-MCF.
+     *
+     * @return JsonResponse La réponse JSON.
      */
     public function getEmcfInfo(): JsonResponse
     {
@@ -324,7 +244,9 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les groupes de taxation
+     * Obtenir les groupes de taxation.
+     *
+     * @return JsonResponse La réponse JSON.
      */
     public function getTaxGroups(): JsonResponse
     {
@@ -348,7 +270,9 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les types de factures
+     * Obtenir les types de factures.
+     *
+     * @return JsonResponse La réponse JSON.
      */
     public function getInvoiceTypes(): JsonResponse
     {
@@ -372,7 +296,9 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les types de paiement
+     * Obtenir les types de paiement.
+     *
+     * @return JsonResponse La réponse JSON.
      */
     public function getPaymentTypes(): JsonResponse
     {
@@ -396,7 +322,10 @@ class EmecfController extends Controller
     }
 
     /**
-     * Lister les factures locales
+     * Lister les factures locales.
+     *
+     * @param Request $request La requête HTTP.
+     * @return JsonResponse La réponse JSON.
      */
     public function listInvoices(Request $request): JsonResponse
     {
@@ -405,21 +334,21 @@ class EmecfController extends Controller
 
             // Filtrage par statut
             if ($request->has('status')) {
-                $query->where('status', $request->status);
+                $query->where('status', $request->get('status'));
             }
 
             // Filtrage par IFU
             if ($request->has('ifu')) {
-                $query->where('ifu', $request->ifu);
+                $query->where('ifu', $request->get('ifu'));
             }
 
             // Filtrage par type
             if ($request->has('type')) {
-                $query->where('type', $request->type);
+                $query->where('type', $request->get('type'));
             }
 
             // Pagination
-            $perPage = $request->get('per_page', 15);
+            $perPage = (int) $request->get('per_page', 15);
             $invoices = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
             return response()->json([
@@ -438,7 +367,10 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les détails d'une facture locale
+     * Obtenir les détails d'une facture locale.
+     *
+     * @param int $id L'identifiant de la facture.
+     * @return JsonResponse La réponse JSON.
      */
     public function getInvoiceDetails(int $id): JsonResponse
     {

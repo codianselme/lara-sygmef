@@ -45,7 +45,7 @@ return new class extends Migration
             $table->integer('total')->default(0); // Montant total
             
             // Champs de finalisation
-            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'error'])->default('pending');
+            $table->string('status')->default('pending')->comment('Possible values: pending, confirmed, cancelled, error');
             $table->string('code_mec_ef_dgi', 29)->nullable(); // Code MECeF/DGI
             $table->text('qr_code')->nullable(); // Contenu du code QR
             $table->string('date_time', 19)->nullable(); // Date/heure facture

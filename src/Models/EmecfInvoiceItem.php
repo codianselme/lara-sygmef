@@ -2,14 +2,40 @@
 
 namespace Codianselme\LaraSygmef\Models;
 
+use Codianselme\LaraSygmef\Enums\TaxGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Modèle représentant un article d'une facture e-MECeF.
+ *
+ * @property int $id
+ * @property int $emecf_invoice_id
+ * @property string|null $code
+ * @property string $name
+ * @property int $price
+ * @property float $quantity
+ * @property TaxGroup $tax_group
+ * @property int|null $tax_specific
+ * @property int|null $original_price
+ * @property string|null $price_modification
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ *
+ * @property-read \Codianselme\LaraSygmef\Models\EmecfInvoice $invoice
+ * @property-read int $total
+ * @property-read float|null $discount_percentage
+ */
 class EmecfInvoiceItem extends Model
 {
     use HasFactory;
 
+    /**
+     * Les attributs qui sont assignables en masse.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'emecf_invoice_id',
         'code',
@@ -22,20 +48,23 @@ class EmecfInvoiceItem extends Model
         'price_modification',
     ];
 
+    /**
+     * Les attributs qui doivent être castés.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'price' => 'integer',
         'quantity' => 'decimal:3',
         'tax_specific' => 'integer',
         'original_price' => 'integer',
+        'tax_group' => TaxGroup::class,
     ];
 
     /**
-     * Groupes de taxation disponibles
-     */
-    public const TAX_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F'];
-
-    /**
-     * Relation avec la facture
+     * Relation avec la facture.
+     *
+     * @return BelongsTo
      */
     public function invoice(): BelongsTo
     {
@@ -43,7 +72,9 @@ class EmecfInvoiceItem extends Model
     }
 
     /**
-     * Calculer le montant total pour cet article
+     * Calculer le montant total pour cet article.
+     *
+     * @return int
      */
     public function getTotalAttribute(): int
     {
@@ -51,15 +82,9 @@ class EmecfInvoiceItem extends Model
     }
 
     /**
-     * Obtenir le libellé du groupe de taxation
-     */
-    public function getTaxGroupLabelAttribute(): string
-    {
-        return $this->tax_group;
-    }
-
-    /**
-     * Vérifier si l'article a une modification de prix
+     * Vérifier si l'article a une modification de prix.
+     *
+     * @return bool
      */
     public function hasPriceModification(): bool
     {
@@ -67,11 +92,13 @@ class EmecfInvoiceItem extends Model
     }
 
     /**
-     * Obtenir le pourcentage de réduction
+     * Obtenir le pourcentage de réduction.
+     *
+     * @return float|null
      */
     public function getDiscountPercentageAttribute(): ?float
     {
-        if (!$this->hasPriceModification()) {
+        if (!$this->hasPriceModification() || $this->original_price === 0) {
             return null;
         }
 

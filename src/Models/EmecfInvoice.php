@@ -2,15 +2,69 @@
 
 namespace Codianselme\LaraSygmef\Models;
 
+use Codianselme\LaraSygmef\Enums\InvoiceStatus;
+use Codianselme\LaraSygmef\Enums\InvoiceType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Modèle représentant une facture e-MECeF.
+ *
+ * @property int $id
+ * @property string $uid
+ * @property string $ifu
+ * @property string|null $aib
+ * @property InvoiceType $type
+ * @property string|null $reference
+ * @property string|null $operator_id
+ * @property string $operator_name
+ * @property string|null $client_ifu
+ * @property string|null $client_name
+ * @property string|null $client_contact
+ * @property string|null $client_address
+ * @property int $ta
+ * @property int $tb
+ * @property int $tc
+ * @property int $td
+ * @property int $taa
+ * @property int $tab
+ * @property int $tac
+ * @property int $tad
+ * @property int $tae
+ * @property int $taf
+ * @property int $hab
+ * @property int $had
+ * @property int $vab
+ * @property int $vad
+ * @property int $aib_amount
+ * @property int $ts
+ * @property int $total
+ * @property InvoiceStatus $status
+ * @property string|null $code_mec_ef_dgi
+ * @property string|null $qr_code
+ * @property string|null $date_time
+ * @property string|null $counters
+ * @property string|null $nim
+ * @property string|null $error_code
+ * @property string|null $error_desc
+ * @property \Illuminate\Support\Carbon|null $submitted_at
+ * @property \Illuminate\Support\Carbon|null $finalized_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ *
+ * @property-read \Illuminate\Database\Eloquent\Collection|\Codianselme\LaraSygmef\Models\EmecfInvoiceItem[] $items
+ * @property-read \Illuminate\Database\Eloquent\Collection|\Codianselme\LaraSygmef\Models\EmecfInvoicePayment[] $payments
+ */
 class EmecfInvoice extends Model
 {
     use HasFactory;
 
+    /**
+     * Les attributs qui sont assignables en masse.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'uid',
         'ifu',
@@ -52,6 +106,11 @@ class EmecfInvoice extends Model
         'finalized_at',
     ];
 
+    /**
+     * Les attributs qui doivent être castés.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'submitted_at' => 'datetime',
         'finalized_at' => 'datetime',
@@ -72,28 +131,14 @@ class EmecfInvoice extends Model
         'aib_amount' => 'integer',
         'ts' => 'integer',
         'total' => 'integer',
+        'status' => InvoiceStatus::class,
+        'type' => InvoiceType::class,
     ];
 
     /**
-     * Statuts possibles pour une facture
-     */
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_CONFIRMED = 'confirmed';
-    public const STATUS_CANCELLED = 'cancelled';
-    public const STATUS_ERROR = 'error';
-
-    /**
-     * Types de factures
-     */
-    public const TYPES = [
-        'FV' => 'Facture de vente',
-        'EV' => 'Facture de vente à l\'exportation',
-        'FA' => 'Facture d\'avoir',
-        'EA' => 'Facture d\'avoir à l\'exportation'
-    ];
-
-    /**
-     * Relation avec les articles de la facture
+     * Relation avec les articles de la facture.
+     *
+     * @return HasMany
      */
     public function items(): HasMany
     {
@@ -101,135 +146,12 @@ class EmecfInvoice extends Model
     }
 
     /**
-     * Relation avec les paiements de la facture
+     * Relation avec les paiements de la facture.
+     *
+     * @return HasMany
      */
     public function payments(): HasMany
     {
         return $this->hasMany(EmecfInvoicePayment::class);
-    }
-
-    /**
-     * Vérifier si la facture est en attente
-     */
-    public function isPending(): bool
-    {
-        return $this->status === self::STATUS_PENDING;
-    }
-
-    /**
-     * Vérifier si la facture est confirmée
-     */
-    public function isConfirmed(): bool
-    {
-        return $this->status === self::STATUS_CONFIRMED;
-    }
-
-    /**
-     * Vérifier si la facture est annulée
-     */
-    public function isCancelled(): bool
-    {
-        return $this->status === self::STATUS_CANCELLED;
-    }
-
-    /**
-     * Vérifier si la facture a une erreur
-     */
-    public function hasError(): bool
-    {
-        return $this->status === self::STATUS_ERROR;
-    }
-
-    /**
-     * Obtenir le libellé du type de facture
-     */
-    public function getTypeLabelAttribute(): string
-    {
-        return self::TYPES[$this->type] ?? $this->type;
-    }
-
-    /**
-     * Obtenir le libellé du statut
-     */
-    public function getStatusLabelAttribute(): string
-    {
-        return match($this->status) {
-            self::STATUS_PENDING => 'En attente',
-            self::STATUS_CONFIRMED => 'Confirmée',
-            self::STATUS_CANCELLED => 'Annulée',
-            self::STATUS_ERROR => 'Erreur',
-            default => $this->status
-        };
-    }
-
-    /**
-     * Marquer la facture comme confirmée
-     */
-    public function markAsConfirmed(array $securityElements): void
-    {
-        $this->update([
-            'status' => self::STATUS_CONFIRMED,
-            'code_mec_ef_dgi' => $securityElements['codeMECeFDGI'] ?? null,
-            'qr_code' => $securityElements['qrCode'] ?? null,
-            'date_time' => $securityElements['dateTime'] ?? null,
-            'counters' => $securityElements['counters'] ?? null,
-            'nim' => $securityElements['nim'] ?? null,
-            'finalized_at' => now(),
-        ]);
-    }
-
-    /**
-     * Marquer la facture comme annulée
-     */
-    public function markAsCancelled(): void
-    {
-        $this->update([
-            'status' => self::STATUS_CANCELLED,
-            'finalized_at' => now(),
-        ]);
-    }
-
-    /**
-     * Marquer la facture comme ayant une erreur
-     */
-    public function markAsError(string $errorCode, string $errorDesc): void
-    {
-        $this->update([
-            'status' => self::STATUS_ERROR,
-            'error_code' => $errorCode,
-            'error_desc' => $errorDesc,
-        ]);
-    }
-
-    /**
-     * Scope pour les factures en attente
-     */
-    public function scopePending($query)
-    {
-        return $query->where('status', self::STATUS_PENDING);
-    }
-
-    /**
-     * Scope pour les factures confirmées
-     */
-    public function scopeConfirmed($query)
-    {
-        return $query->where('status', self::STATUS_CONFIRMED);
-    }
-
-    /**
-     * Scope pour les factures annulées
-     */
-    public function scopeCancelled($query)
-    {
-        return $query->where('status', self::STATUS_CANCELLED);
-    }
-
-    /**
-     * Scope pour les factures avec erreur
-     */
-    public function scopeWithError($query)
-    {
-        return $query->where('status', self::STATUS_ERROR);
     }
 }
