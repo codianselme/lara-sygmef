@@ -99,10 +99,10 @@ class EmecfService
     {
         $this->isTestMode = (bool) config('emecf.test_mode', true);
         $this->baseUrl = $this->isTestMode 
-            ? config('emecf.test_url') 
-            : config('emecf.prod_url');
+            ? config('emecf.urls.test.invoice') 
+            : config('emecf.urls.production.invoice');
         
-        $this->shouldSaveInvoices = (bool) config('emecf.save_invoices', false);
+        $this->shouldSaveInvoices = (bool) config('emecf.database.save_invoices', true);
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
@@ -124,14 +124,14 @@ class EmecfService
      */
     private function authenticate(): void
     {
-        if (!config('emecf.ifu') || !config('emecf.token')) {
+        if (!config('emecf.default_ifu') || !config('emecf.token')) {
             throw new \Exception('Token e-MECeF non configuré');
         }
 
         try {
             $response = $this->client->post('token', [
                 'json' => [
-                    'ifu' => config('emecf.ifu'),
+                    'ifu' => config('emecf.default_ifu'),
                     'token' => config('emecf.token')
                 ]
             ]);
