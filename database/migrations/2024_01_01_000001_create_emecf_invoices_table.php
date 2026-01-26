@@ -26,26 +26,26 @@ return new class extends Migration
             $table->text('client_address')->nullable(); // Adresse du client
             
             // Champs de calcul des taxes
-            $table->integer('ta')->default(0); // Valeur groupe A
-            $table->integer('tb')->default(0); // Valeur groupe B
-            $table->integer('tc')->default(0); // Valeur groupe C
-            $table->integer('td')->default(0); // Valeur groupe D
-            $table->integer('taa')->default(0); // Montant total groupe A
-            $table->integer('tab')->default(0); // Montant total groupe B
-            $table->integer('tac')->default(0); // Montant total groupe C
-            $table->integer('tad')->default(0); // Montant total groupe D
-            $table->integer('tae')->default(0); // Montant total groupe E
-            $table->integer('taf')->default(0); // Montant total groupe F
-            $table->integer('hab')->default(0); // Montant HT groupe B
-            $table->integer('had')->default(0); // Montant HT groupe D
-            $table->integer('vab')->default(0); // Montant TVA groupe B
-            $table->integer('vad')->default(0); // Montant TVA groupe D
-            $table->integer('aib_amount')->default(0); // Montant AIB
-            $table->integer('ts')->default(0); // Montant impôt spécifique
-            $table->integer('total')->default(0); // Montant total
+            $table->decimal('ta', 15, 2)->default(0); // Valeur groupe A
+            $table->decimal('tb', 15, 2)->default(0); // Valeur groupe B
+            $table->decimal('tc', 15, 2)->default(0); // Valeur groupe C
+            $table->decimal('td', 15, 2)->default(0); // Valeur groupe D
+            $table->decimal('taa', 15, 2)->default(0); // Montant total groupe A
+            $table->decimal('tab', 15, 2)->default(0); // Montant total groupe B
+            $table->decimal('tac', 15, 2)->default(0); // Montant total groupe C
+            $table->decimal('tad', 15, 2)->default(0); // Montant total groupe D
+            $table->decimal('tae', 15, 2)->default(0); // Montant total groupe E
+            $table->decimal('taf', 15, 2)->default(0); // Montant total groupe F
+            $table->decimal('hab', 15, 2)->default(0); // Montant HT groupe B
+            $table->decimal('had', 15, 2)->default(0); // Montant HT groupe D
+            $table->decimal('vab', 15, 2)->default(0); // Montant TVA groupe B
+            $table->decimal('vad', 15, 2)->default(0); // Montant TVA groupe D
+            $table->decimal('aib_amount', 15, 2)->default(0); // Montant AIB
+            $table->decimal('ts', 15, 2)->default(0); // Montant impôt spécifique
+            $table->decimal('total', 15, 2)->default(0); // Montant total
             
             // Champs de finalisation
-            $table->enum('status', ['pending', 'confirmed', 'cancelled', 'error'])->default('pending');
+            $table->string('status')->default('pending')->comment('Possible values: pending, confirmed, cancelled, error');
             $table->string('code_mec_ef_dgi', 29)->nullable(); // Code MECeF/DGI
             $table->text('qr_code')->nullable(); // Contenu du code QR
             $table->string('date_time', 19)->nullable(); // Date/heure facture

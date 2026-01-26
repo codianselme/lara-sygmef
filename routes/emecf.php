@@ -33,7 +33,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 */
 
 // Route pour le statut de l'API de facturation
-Route::get('/emecf/status', [EmecfController::class, 'getInvoiceStatus']);
+Route::get('/emecf/status', [EmecfController::class, 'getApiStatus']);
+
+// Route pour les informations du contribuable
+Route::get('/emecf/taxpayer', [EmecfController::class, 'getTaxpayerInfo']);
 
 // Routes pour les factures
 Route::prefix('/emecf/invoices')->group(function () {
@@ -42,9 +45,6 @@ Route::prefix('/emecf/invoices')->group(function () {
     
     // Finaliser une facture (confirmer/annuler)
     Route::put('/{uid}/finalize', [EmecfController::class, 'finalizeInvoice']);
-    
-    // Obtenir les détails d'une facture en attente
-    Route::get('/{uid}/pending', [EmecfController::class, 'getPendingInvoiceDetails']);
     
     // Lister les factures locales
     Route::get('/', [EmecfController::class, 'listInvoices']);
@@ -55,9 +55,6 @@ Route::prefix('/emecf/invoices')->group(function () {
 
 // Routes pour les informations e-MECeF
 Route::prefix('/emecf/info')->group(function () {
-    // Informations sur les e-MCF
-    Route::get('/emcf', [EmecfController::class, 'getEmcfInfo']);
-    
     // Groupes de taxation
     Route::get('/tax-groups', [EmecfController::class, 'getTaxGroups']);
     
@@ -78,7 +75,7 @@ Route::prefix('/emecf/info')->group(function () {
 */
 
 // Route de statut compatible avec l'API officielle
-Route::get('/emecf/api/invoice', [EmecfController::class, 'getInvoiceStatus']);
+Route::get('/emecf/api/invoice', [EmecfController::class, 'getApiStatus']);
 
 // Routes de facturation compatibles
 Route::prefix('/emecf/api/invoice')->group(function () {
@@ -91,14 +88,14 @@ Route::prefix('/emecf/api/invoice')->group(function () {
         return app(EmecfController::class)->finalizeInvoice($request, $uid);
     });
     
-    // Détails d'une facture en attente
-    Route::get('/{uid}', [EmecfController::class, 'getPendingInvoiceDetails']);
+    // Détails d'une facture via l'API
+    Route::get('/{uid}', [EmecfController::class, 'getApiInvoiceDetails']);
 });
 
 // Routes d'information compatibles
 Route::prefix('/emecf/api/info')->group(function () {
     // Statut e-MCF
-    Route::get('/status', [EmecfController::class, 'getEmcfInfo']);
+    Route::get('/status', [EmecfController::class, 'getApiStatus']);
     
     // Groupes de taxation
     Route::get('/taxGroups', [EmecfController::class, 'getTaxGroups']);
