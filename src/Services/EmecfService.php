@@ -318,7 +318,7 @@ class EmecfService
                 foreach ($requestData['payment'] as $payment) {
                     EmecfInvoicePayment::create([
                         'emecf_invoice_id' => $invoice->id,
-                        'type' => $payment['name'],
+                        'name' => $payment['name'],
                         'amount' => $payment['amount'],
                     ]);
                 }
@@ -341,7 +341,7 @@ class EmecfService
 
         if ($invoice) {
             $invoice->update([
-                'status' => InvoiceStatus::FINALIZED,
+                'status' => InvoiceStatus::CONFIRMED,
                 'qr_code' => $responseData['qrCode'] ?? null,
                 'counters' => $responseData['counters'] ?? null,
                 'signature' => $responseData['signature'] ?? null,
