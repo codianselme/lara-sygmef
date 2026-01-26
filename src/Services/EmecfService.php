@@ -94,6 +94,8 @@ class EmecfService
 
     /**
      * Créer une nouvelle instance de EmecfService.
+     *
+     * @throws \Exception Si le token e-MECeF n'est pas configuré.
      */
     public function __construct()
     {
@@ -103,44 +105,21 @@ class EmecfService
             : config('emecf.urls.production.invoice');
         
         $this->shouldSaveInvoices = (bool) config('emecf.database.save_invoices', true);
+        $this->token = (string) config('emecf.token');
+
+        if (empty($this->token)) {
+            throw new \Exception('Token e-MECeF non configuré');
+        }
 
         $this->client = new Client([
             'base_uri' => $this->baseUrl,
             'headers' => [
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $this->token,
             ],
             'verify' => false, // Désactiver la vérification SSL pour le test
         ]);
-
-        $this->authenticate();
-    }
-
-    /**
-     * Authentifier le service auprès de l'API.
-     *
-     * @return void
-     * @throws \Exception Si le token e-MECeF n'est pas configuré.
-     */
-    private function authenticate(): void
-    {
-        if (!config('emecf.default_ifu') || !config('emecf.token')) {
-            throw new \Exception('Token e-MECeF non configuré');
-        }
-
-        try {
-            $response = $this->client->post('token', [
-                'json' => [
-                    'ifu' => config('emecf.default_ifu'),
-                    'token' => config('emecf.token')
-                ]
-            ]);
-
-            $data = (array) json_decode($response->getBody()->getContents(), true);
-            $this->token = $data['token'];
-        } catch (RequestException $e) {
-            $this->handleError($e);
-        }
     }
 
     /**
