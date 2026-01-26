@@ -15,10 +15,10 @@ class EmecfApiTest extends TestCase
     /**
      * Test de récupération du statut de l'API
      */
-    public function test_get_invoice_status(): void
+    public function test_get_api_status(): void
     {
         $this->mock(EmecfService::class, function ($mock) {
-            $mock->shouldReceive('getInvoiceStatus')
+            $mock->shouldReceive('getStatus')
                 ->once()
                 ->andReturn([
                     'success' => true,
@@ -29,9 +29,32 @@ class EmecfApiTest extends TestCase
         $response = $this->getJson('/api/emecf/status');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'data',
+                 ->assertJson([
+                     'success' => true,
+                     'data' => ['status' => 'ok']
+                 ]);
+    }
+
+    /**
+     * Test de récupération des informations du contribuable
+     */
+    public function test_get_taxpayer_info(): void
+    {
+        $this->mock(EmecfService::class, function ($mock) {
+            $mock->shouldReceive('getTaxpayerInfo')
+                ->once()
+                ->andReturn([
+                    'success' => true,
+                    'data' => ['ifu' => '1234567890123', 'name' => 'Test Taxpayer']
+                ]);
+        });
+
+        $response = $this->getJson('/api/emecf/taxpayer');
+
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'success' => true,
+                     'data' => ['ifu' => '1234567890123', 'name' => 'Test Taxpayer']
                  ]);
     }
 
@@ -69,25 +92,9 @@ class EmecfApiTest extends TestCase
                     'success' => true,
                     'data' => [
                         'uid' => 'test-uid-' . uniqid(),
-                        'ta' => 0,
-                        'tb' => 0,
-                        'tc' => 0,
-                        'td' => 0,
-                        'taa' => 0,
-                        'tab' => 0,
-                        'tac' => 0,
-                        'tad' => 0,
-                        'tae' => 0,
-                        'taf' => 0,
-                        'hab' => 0,
-                        'had' => 0,
-                        'vab' => 0,
-                        'vad' => 0,
-                        'aib' => 0,
-                        'ts' => 0,
                         'total' => 20000,
-                        'error' => null
-                    ]
+                    ],
+                    'invoice_id' => 1
                 ]);
         });
 
@@ -99,7 +106,12 @@ class EmecfApiTest extends TestCase
                      'data' => [
                          'uid',
                          'total'
-                     ]
+                     ],
+                     'invoice_id'
+                 ])
+                 ->assertJson([
+                     'success' => true,
+                     'invoice_id' => 1
                  ]);
     }
 

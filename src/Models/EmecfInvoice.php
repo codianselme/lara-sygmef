@@ -23,23 +23,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $client_name
  * @property string|null $client_contact
  * @property string|null $client_address
- * @property int $ta
- * @property int $tb
- * @property int $tc
- * @property int $td
- * @property int $taa
- * @property int $tab
- * @property int $tac
- * @property int $tad
- * @property int $tae
- * @property int $taf
- * @property int $hab
- * @property int $had
- * @property int $vab
- * @property int $vad
- * @property int $aib_amount
- * @property int $ts
- * @property int $total
+ * @property float $ta
+ * @property float $tb
+ * @property float $tc
+ * @property float $td
+ * @property float $taa
+ * @property float $tab
+ * @property float $tac
+ * @property float $tad
+ * @property float $tae
+ * @property float $taf
+ * @property float $hab
+ * @property float $had
+ * @property float $vab
+ * @property float $vad
+ * @property float $aib_amount
+ * @property float $ts
+ * @property float $total
  * @property InvoiceStatus $status
  * @property string|null $code_mec_ef_dgi
  * @property string|null $qr_code
@@ -114,23 +114,23 @@ class EmecfInvoice extends Model
     protected $casts = [
         'submitted_at' => 'datetime',
         'finalized_at' => 'datetime',
-        'ta' => 'integer',
-        'tb' => 'integer',
-        'tc' => 'integer',
-        'td' => 'integer',
-        'taa' => 'integer',
-        'tab' => 'integer',
-        'tac' => 'integer',
-        'tad' => 'integer',
-        'tae' => 'integer',
-        'taf' => 'integer',
-        'hab' => 'integer',
-        'had' => 'integer',
-        'vab' => 'integer',
-        'vad' => 'integer',
-        'aib_amount' => 'integer',
-        'ts' => 'integer',
-        'total' => 'integer',
+        'ta' => 'decimal:2',
+        'tb' => 'decimal:2',
+        'tc' => 'decimal:2',
+        'td' => 'decimal:2',
+        'taa' => 'decimal:2',
+        'tab' => 'decimal:2',
+        'tac' => 'decimal:2',
+        'tad' => 'decimal:2',
+        'tae' => 'decimal:2',
+        'taf' => 'decimal:2',
+        'hab' => 'decimal:2',
+        'had' => 'decimal:2',
+        'vab' => 'decimal:2',
+        'vad' => 'decimal:2',
+        'aib_amount' => 'decimal:2',
+        'ts' => 'decimal:2',
+        'total' => 'decimal:2',
         'status' => InvoiceStatus::class,
         'type' => InvoiceType::class,
     ];
