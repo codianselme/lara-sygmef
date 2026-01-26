@@ -37,23 +37,47 @@ class EmecfController extends Controller
      *
      * @return JsonResponse La réponse JSON.
      */
-    public function getInvoiceStatus(): JsonResponse
+    public function getApiStatus(): JsonResponse
     {
         try {
-            $result = $this->emecfService->getInvoiceStatus();
+            $result = $this->emecfService->getStatus();
             
             return response()->json([
                 'success' => $result['success'],
                 'data' => $result['data'] ?? null,
-                'error' => $result['error'] ?? null,
-                'error_code' => $result['error_code'] ?? null
+                'error' => $result['error'] ?? null
             ], $result['success'] ? 200 : 400);
         } catch (Exception $e) {
             Log::error('e-MECeF Status Error', ['error' => $e->getMessage()]);
             
             return response()->json([
                 'success' => false,
-                'error' => 'Erreur lors de la récupération du statut'
+                'error' => 'Erreur lors de la récupération du statut: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtenir les informations du contribuable.
+     *
+     * @return JsonResponse La réponse JSON.
+     */
+    public function getTaxpayerInfo(): JsonResponse
+    {
+        try {
+            $result = $this->emecfService->getTaxpayerInfo();
+            
+            return response()->json([
+                'success' => $result['success'],
+                'data' => $result['data'] ?? null,
+                'error' => $result['error'] ?? null
+            ], $result['success'] ? 200 : 400);
+        } catch (Exception $e) {
+            Log::error('e-MECeF Taxpayer Info Error', ['error' => $e->getMessage()]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Erreur lors de la récupération des informations du contribuable: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -71,17 +95,13 @@ class EmecfController extends Controller
             $validatedData = (array) $request->validate([
                 'ifu' => 'required|string|size:13',
                 'aib' => 'nullable|in:A,B',
-                'type' => 'required|in:FV,EV,FA,EA',
+                'type' => 'required|in:' . implode(',', array_keys(EmecfService::INVOICE_TYPES)),
                 'reference' => 'required_if:type,FA,EA|string|size:24',
                 'items' => 'required|array|min:1',
-                'items.*.code' => 'nullable|string',
                 'items.*.name' => 'required|string|max:255',
-                'items.*.price' => 'required|integer|min:0',
+                'items.*.price' => 'required|numeric|min:0',
                 'items.*.quantity' => 'required|numeric|min:0',
-                'items.*.taxGroup' => 'required|in:A,B,C,D,E,F',
-                'items.*.taxSpecific' => 'nullable|integer|min:0',
-                'items.*.originalPrice' => 'nullable|integer|min:0',
-                'items.*.priceModification' => 'nullable|string|max:255',
+                'items.*.taxGroup' => 'required|in:' . implode(',', EmecfService::TAX_GROUPS),
                 'client' => 'nullable|array',
                 'client.ifu' => 'nullable|string|size:13',
                 'client.name' => 'nullable|string|max:255',
@@ -90,27 +110,26 @@ class EmecfController extends Controller
                 'operator' => 'required|array',
                 'operator.id' => 'nullable|string|max:50',
                 'operator.name' => 'required|string|max:255',
-                'payment' => 'nullable|array',
-                'payment.*.name' => 'required|in:ESPECES,VIREMENT,CARTEBANCAIRE,MOBILEMONEY,CHEQUES,CREDIT,AUTRE',
-                'payment.*.amount' => 'required|integer|min:0'
+                'payment' => 'required|array|min:1',
+                'payment.*.name' => 'required|in:' . implode(',', array_keys(EmecfService::PAYMENT_TYPES)),
+                'payment.*.amount' => 'required|numeric|min:0'
             ]);
 
             // Soumettre la facture via le service
-            // Le service gère désormais la sauvegarde automatique si configuré
             $result = $this->emecfService->submitInvoice($validatedData);
 
             if (!$result['success']) {
                 return response()->json([
                     'success' => false,
                     'error' => $result['error'],
-                    'error_code' => $result['error_code'] ?? null,
-                    'error_desc' => $result['error_desc'] ?? null
+                    'details' => $result['details'] ?? null
                 ], 400);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $result['data']
+                'data' => $result['data'],
+                'invoice_id' => $result['invoice_id'] ?? null
             ], 201);
 
         } catch (ValidationException $e) {
@@ -147,15 +166,13 @@ class EmecfController extends Controller
             $action = $validatedData['action'];
 
             // Finaliser via le service
-            // Le service gère désormais la mise à jour automatique de la facture locale si configuré
             $result = $this->emecfService->finalizeInvoice($uid, $action);
 
             if (!$result['success']) {
                 return response()->json([
                     'success' => false,
                     'error' => $result['error'],
-                    'error_code' => $result['error_code'] ?? null,
-                    'error_desc' => $result['error_desc'] ?? null
+                    'details' => $result['details'] ?? null
                 ], 400);
             }
 
@@ -180,22 +197,20 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les détails d'une facture en attente.
+     * Obtenir les détails d'une facture.
      *
      * @param string $uid L'identifiant unique de la facture.
      * @return JsonResponse La réponse JSON.
      */
-    public function getPendingInvoiceDetails(string $uid): JsonResponse
+    public function getApiInvoiceDetails(string $uid): JsonResponse
     {
         try {
-            // Récupérer les détails depuis l'API e-MECeF via le service
-            $result = $this->emecfService->getPendingInvoiceDetails($uid);
+            $result = $this->emecfService->getInvoiceStatus($uid);
 
             if (!$result['success']) {
                 return response()->json([
                     'success' => false,
-                    'error' => $result['error'],
-                    'error_code' => $result['error_code'] ?? null
+                    'error' => $result['error']
                 ], 400);
             }
 
@@ -205,7 +220,7 @@ class EmecfController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('e-MECeF Get Invoice Details Error', [
+            Log::error('e-MECeF Get API Invoice Details Error', [
                 'error' => $e->getMessage(),
                 'uid' => $uid
             ]);
@@ -218,81 +233,16 @@ class EmecfController extends Controller
     }
 
     /**
-     * Obtenir les informations sur les e-MCF.
-     *
-     * @return JsonResponse La réponse JSON.
-     */
-    public function getEmcfInfo(): JsonResponse
-    {
-        try {
-            $result = $this->emecfService->getEmcfInfo();
-            
-            return response()->json([
-                'success' => $result['success'],
-                'data' => $result['data'] ?? null,
-                'error' => $result['error'] ?? null,
-                'error_code' => $result['error_code'] ?? null
-            ], $result['success'] ? 200 : 400);
-        } catch (Exception $e) {
-            Log::error('e-MECeF Info Error', ['error' => $e->getMessage()]);
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Erreur lors de la récupération des informations e-MCF'
-            ], 500);
-        }
-    }
-
-    /**
-     * Obtenir les groupes de taxation.
-     *
-     * @return JsonResponse La réponse JSON.
-     */
-    public function getTaxGroups(): JsonResponse
-    {
-        try {
-            $result = $this->emecfService->getTaxGroups();
-            
-            return response()->json([
-                'success' => $result['success'],
-                'data' => $result['data'] ?? null,
-                'error' => $result['error'] ?? null,
-                'error_code' => $result['error_code'] ?? null
-            ], $result['success'] ? 200 : 400);
-        } catch (Exception $e) {
-            Log::error('e-MECeF Tax Groups Error', ['error' => $e->getMessage()]);
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Erreur lors de la récupération des groupes de taxation'
-            ], 500);
-        }
-    }
-
-    /**
      * Obtenir les types de factures.
      *
      * @return JsonResponse La réponse JSON.
      */
     public function getInvoiceTypes(): JsonResponse
     {
-        try {
-            $result = $this->emecfService->getInvoiceTypes();
-            
-            return response()->json([
-                'success' => $result['success'],
-                'data' => $result['data'] ?? null,
-                'error' => $result['error'] ?? null,
-                'error_code' => $result['error_code'] ?? null
-            ], $result['success'] ? 200 : 400);
-        } catch (Exception $e) {
-            Log::error('e-MECeF Invoice Types Error', ['error' => $e->getMessage()]);
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Erreur lors de la récupération des types de factures'
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => EmecfService::INVOICE_TYPES
+        ]);
     }
 
     /**
@@ -302,23 +252,23 @@ class EmecfController extends Controller
      */
     public function getPaymentTypes(): JsonResponse
     {
-        try {
-            $result = $this->emecfService->getPaymentTypes();
-            
-            return response()->json([
-                'success' => $result['success'],
-                'data' => $result['data'] ?? null,
-                'error' => $result['error'] ?? null,
-                'error_code' => $result['error_code'] ?? null
-            ], $result['success'] ? 200 : 400);
-        } catch (Exception $e) {
-            Log::error('e-MECeF Payment Types Error', ['error' => $e->getMessage()]);
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Erreur lors de la récupération des types de paiement'
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => EmecfService::PAYMENT_TYPES
+        ]);
+    }
+
+    /**
+     * Obtenir les groupes de taxation.
+     *
+     * @return JsonResponse La réponse JSON.
+     */
+    public function getTaxGroups(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => EmecfService::TAX_GROUPS
+        ]);
     }
 
     /**

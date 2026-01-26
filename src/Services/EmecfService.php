@@ -2,60 +2,128 @@
 
 namespace Codianselme\LaraSygmef\Services;
 
-use Codianselme\LaraSygmef\Enums\InvoiceStatus;
 use Codianselme\LaraSygmef\Models\EmecfInvoice;
 use Codianselme\LaraSygmef\Models\EmecfInvoiceItem;
 use Codianselme\LaraSygmef\Models\EmecfInvoicePayment;
+use Codianselme\LaraSygmef\Enums\InvoiceStatus;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Exception;
 
 /**
  * Service pour interagir avec l'API e-MECeF de la DGI Bénin.
  */
 class EmecfService
 {
-    /** @var Client Le client HTTP Guzzle */
+    /**
+     * @var Client Le client HTTP Guzzle.
+     */
     private Client $client;
 
-    /** @var string L'URL de base de l'API */
+    /**
+     * @var string L'URL de base de l'API.
+     */
     private string $baseUrl;
 
-    /** @var bool Si les factures doivent être sauvegardées localement */
+    /**
+     * @var string Le jeton d'authentification.
+     */
+    private string $token;
+
+    /**
+     * @var bool Indique si le service est en mode test.
+     */
+    private bool $isTestMode;
+
+    /**
+     * @var bool Indique si les factures doivent être sauvegardées localement.
+     */
     private bool $shouldSaveInvoices;
 
-    /** @var array<string, string> Liste des types de factures valides */
-    private const INVOICE_TYPES = [
-        'FV' => 'Facture de Vente',
-        'EV' => 'Facture d\'Exportation',
-        'FA' => 'Facture d\'Avoir',
-        'EA' => 'Facture d\'Avoir d\'Exportation',
+    /**
+     * Types de factures disponibles.
+     */
+    public const INVOICE_TYPES = [
+        'FV' => 'Facture de vente',
+        'EV' => 'Facture de vente à l\'exportation',
+        'FA' => 'Facture d\'avoir',
+        'EA' => 'Facture d\'avoir à l\'exportation'
     ];
 
     /**
-     * Constructeur de EmecfService.
+     * Types de paiement disponibles.
+     */
+    public const PAYMENT_TYPES = [
+        'ESPECES' => 'Espèces',
+        'VIREMENT' => 'Virement',
+        'CARTE_BANCAIRE' => 'Carte bancaire',
+        'MOBILE_MONEY' => 'Mobile Money',
+        'CHEQUE' => 'Chèque',
+        'CREDIT' => 'Crédit',
+        'AUTRE' => 'Autre'
+    ];
+
+    /**
+     * Groupes de taxation DGI.
+     */
+    public const TAX_GROUPS = [
+        'A', 'B', 'C', 'D', 'E', 'F'
+    ];
+
+    /**
+     * Codes d'erreur courants de l'API e-MECeF.
+     */
+    public const ERROR_CODES = [
+        1 => 'Le jeton d\'authentification est invalide ou expiré',
+        2 => 'L\'IFU n\'est pas valide',
+        3 => 'Type de facture n\'est pas valide',
+        4 => 'Le format de la requête n\'est pas valide',
+        5 => 'L\'identifiant de l\'opérateur n\'est pas valide',
+        6 => 'La valeur de l\'AIB n\'est pas valide',
+        7 => 'Le type de paiement n\'est pas valide',
+        8 => 'Le montant du paiement n\'est pas valide',
+        9 => 'Le groupe de taxation au niveau des articles n\'est pas valide',
+        10 => 'Le prix unitaire de l\'article n\'est pas valide',
+        11 => 'La référence de la facture originale n\'est pas valide (la facture originale est introuvable)',
+        12 => 'La référence de la facture originale n\'est pas valide (le montant sur la facture d\'avoir dépassé le montant de la facture originale)',
+        13 => 'Le montant total de la facture est invalide',
+        20 => 'La facture n\'existe pas ou elle est déjà finalisée / annulée',
+    ];
+
+    /**
+     * Créer une nouvelle instance de EmecfService.
+     *
+     * @throws \Exception Si le token e-MECeF n'est pas configuré.
      */
     public function __construct()
     {
-        $this->baseUrl = config('emecf.mode') === 'production'
-            ? config('emecf.urls.production')
-            : config('emecf.urls.test');
+        $this->isTestMode = (bool) config('emecf.test_mode', true);
+        $this->baseUrl = $this->isTestMode 
+            ? config('emecf.urls.test.invoice') 
+            : config('emecf.urls.production.invoice');
+        
+        $this->shouldSaveInvoices = (bool) config('emecf.database.save_invoices', true);
+        $this->token = (string) config('emecf.token');
 
-        $this->shouldSaveInvoices = (bool) config('emecf.save_invoices', false);
+        if (empty($this->token)) {
+            throw new \Exception('Token e-MECeF non configuré');
+        }
 
         $this->client = new Client([
-            'base_uri' => $this->baseUrl . '/',
+            'base_uri' => $this->baseUrl,
             'headers' => [
-                'Authorization' => 'Bearer ' . config('emecf.token'),
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $this->token,
             ],
-            'verify' => false, // Désactiver la vérification SSL si nécessaire pour le test
+            'verify' => false, // Désactiver la vérification SSL pour le test
         ]);
     }
 
     /**
-     * Récupérer le statut de l'API.
+     * Obtenir le statut de l'API.
      *
      * @return array<string, mixed>
      */
@@ -73,41 +141,26 @@ class EmecfService
     }
 
     /**
-     * Récupérer les informations de l'utilisateur.
-     *
-     * @return array<string, mixed>
-     */
-    public function getUserInfo(): array
-    {
-        try {
-            $response = $this->client->get('user-info');
-            return [
-                'success' => true,
-                'data' => json_decode($response->getBody()->getContents(), true)
-            ];
-        } catch (RequestException $e) {
-            return $this->handleError($e);
-        }
-    }
-
-    /**
-     * Soumettre une facture pour normalisation.
+     * Envoyer une facture à l'API e-MECeF.
      *
      * @param array<string, mixed> $data Les données de la facture.
-     * @return array<string, mixed>
+     * @return array<string, mixed> La réponse de l'API.
+     * @throws \Exception Si les données sont invalides ou si la requête échoue.
      */
     public function submitInvoice(array $data): array
     {
+        $data = $this->validateInvoiceData($data);
+
         try {
-            $validatedData = $this->validateInvoiceData($data);
             $response = $this->client->post('invoice', [
-                'json' => $validatedData
+                'json' => $data
             ]);
+
             $responseData = (array) json_decode($response->getBody()->getContents(), true);
 
             // Sauvegarde locale si activée
             $localInvoice = null;
-            if ($this->shouldSaveInvoices) {
+            if ($this->shouldSaveInvoices && isset($responseData['uid'])) {
                 $localInvoice = $this->saveInvoiceLocally($data, $responseData);
             }
 
@@ -118,20 +171,15 @@ class EmecfService
             ];
         } catch (RequestException $e) {
             return $this->handleError($e);
-        } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
         }
     }
 
     /**
-     * Finaliser une facture (confirmer ou annuler).
+     * Finaliser ou annuler une facture.
      *
      * @param string $uid L'identifiant unique de la facture.
      * @param string $action L'action à effectuer (confirm ou cancel).
-     * @return array<string, mixed>
+     * @return array<string, mixed> La réponse de l'API.
      * @throws \Exception Si l'action est invalide.
      */
     public function finalizeInvoice(string $uid, string $action = 'confirm'): array
@@ -141,7 +189,7 @@ class EmecfService
         }
 
         try {
-            $response = $this->client->put("invoice/" . $uid . "/" . $action);
+            $response = $this->client->put("invoice/{$uid}/{$action}");
             $responseData = (array) json_decode($response->getBody()->getContents(), true);
 
             // Mise à jour locale si activée
@@ -164,18 +212,20 @@ class EmecfService
     }
 
     /**
-     * Récupérer les détails d'une facture.
+     * Obtenir le statut d'une facture.
      *
      * @param string $uid L'identifiant unique de la facture.
-     * @return array<string, mixed>
+     * @return array<string, mixed> La réponse de l'API.
      */
-    public function getInvoiceDetails(string $uid): array
+    public function getInvoiceStatus(string $uid): array
     {
         try {
-            $response = $this->client->get("invoice/" . $uid);
+            $response = $this->client->get("invoice/{$uid}");
+            $data = (array) json_decode($response->getBody()->getContents(), true);
+
             return [
                 'success' => true,
-                'data' => json_decode($response->getBody()->getContents(), true)
+                'data' => $data
             ];
         } catch (RequestException $e) {
             return $this->handleError($e);
@@ -183,30 +233,74 @@ class EmecfService
     }
 
     /**
-     * Gérer les erreurs de requête.
+     * Obtenir les informations du contribuable.
      *
-     * @param RequestException $e L'exception de requête.
-     * @return array<string, mixed>
+     * @return array<string, mixed> La réponse de l'API.
      */
-    private function handleError(RequestException $e): array
+    public function getTaxpayerInfo(): array
     {
-        $response = $e->getResponse();
-        $statusCode = $response ? $response->getStatusCode() : 500;
-        $content = $response ? json_decode($response->getBody()->getContents(), true) : ['error' => 'Erreur de connexion à l\'API'];
+        try {
+            $response = $this->client->get('info');
+            $data = (array) json_decode($response->getBody()->getContents(), true);
 
-        return [
-            'success' => false,
-            'status' => $statusCode,
-            'error' => $content['message'] ?? $content['error'] ?? 'Une erreur inconnue est survenue'
-        ];
+            return [
+                'success' => true,
+                'data' => $data
+            ];
+        } catch (RequestException $e) {
+            return $this->handleError($e);
+        }
     }
 
     /**
-     * Sauvegarder une facture localement.
+     * Obtenir les statistiques du contribuable.
      *
-     * @param array<string, mixed> $requestData Les données envoyées à l'API.
-     * @param array<string, mixed> $responseData La réponse reçue de l'API.
-     * @return EmecfInvoice
+     * @return array<string, mixed> La réponse de l'API.
+     */
+    public function getTaxpayerStats(): array
+    {
+        try {
+            $response = $this->client->get('stats');
+            $data = (array) json_decode($response->getBody()->getContents(), true);
+
+            return [
+                'success' => true,
+                'data' => $data
+            ];
+        } catch (RequestException $e) {
+            return $this->handleError($e);
+        }
+    }
+
+    /**
+     * Obtenir la liste des factures.
+     *
+     * @param int $page Le numéro de page.
+     * @return array<string, mixed> La réponse de l'API.
+     */
+    public function getInvoices(int $page = 1): array
+    {
+        try {
+            $response = $this->client->get('invoices', [
+                'query' => ['page' => $page]
+            ]);
+            $data = (array) json_decode($response->getBody()->getContents(), true);
+
+            return [
+                'success' => true,
+                'data' => $data
+            ];
+        } catch (RequestException $e) {
+            return $this->handleError($e);
+        }
+    }
+
+    /**
+     * Enregistrer une facture localement.
+     *
+     * @param array<string, mixed> $requestData Les données de la requête originale.
+     * @param array<string, mixed> $responseData La réponse de l'API e-MECeF.
+     * @return EmecfInvoice La facture enregistrée.
      */
     private function saveInvoiceLocally(array $requestData, array $responseData): EmecfInvoice
     {
@@ -218,7 +312,7 @@ class EmecfService
                 'aib' => $requestData['aib'] ?? null,
                 'type' => $requestData['type'],
                 'reference' => $requestData['reference'] ?? null,
-                'operator_id' => $requestData['operator']['id'] ?? null,
+                'operator_id' => $requestData['operator']['id'] ?? auth()->user()->id,
                 'operator_name' => $requestData['operator']['name'],
                 'client_ifu' => $requestData['client']['ifu'] ?? null,
                 'client_name' => $requestData['client']['name'] ?? null,
@@ -333,38 +427,81 @@ class EmecfService
            throw new \Exception('La référence de la facture originale doit contenir 24 caractères');
         }
 
+        // Validation des articles
         foreach ($data['items'] as $index => $item) {
             if (empty($item['name'])) {
-                throw new \Exception('Le nom de l\'article à l\'index ' . $index . ' est obligatoire');
+                throw new \Exception("Le nom de l'article à l'index " . $index . " est obligatoire");
             }
-            if (!isset($item['price']) || $item['price'] < 0) {
-                throw new \Exception('Le prix de l\'article à l\'index ' . $index . ' est invalide');
+
+            if (!isset($item['price']) || !is_numeric($item['price'])) {
+                throw new \Exception("Le prix de l'article à l'index " . $index . " est invalide");
             }
-            if (!isset($item['quantity']) || $item['quantity'] <= 0) {
-                throw new \Exception('La quantité de l\'article à l\'index ' . $index . ' doit être supérieure à 0');
+
+            if (!isset($item['quantity']) || !is_numeric($item['quantity'])) {
+                throw new \Exception("La quantité de l'article à l'index " . $index . " est invalide");
             }
-            if (empty($item['taxGroup'])) {
-                throw new \Exception('Le groupe de taxation de l\'article à l\'index ' . $index . ' est obligatoire');
+
+            if (empty($item['taxGroup']) || !in_array($item['taxGroup'], self::TAX_GROUPS)) {
+                throw new \Exception("Le groupe de taxation de l'article à l'index " . $index . " est invalide");
             }
         }
 
+        // Validation de l'opérateur
         if (empty($data['operator']['name'])) {
             throw new \Exception('Le nom de l\'opérateur est obligatoire');
         }
 
-        if (empty($data['payment']) || !is_array($data['payment'])) {
-            throw new \Exception('Au moins un mode de paiement est obligatoire');
-        }
+        // Validation des paiements
+        if (isset($data['payment'])) {
+            foreach ($data['payment'] as $index => $payment) {
+                if (empty($payment['name']) || !array_key_exists($payment['name'], self::PAYMENT_TYPES)) {
+                    throw new \Exception("Le type de paiement à l'index " . $index . " est invalide");
+                }
 
-        foreach ($data['payment'] as $index => $payment) {
-            if (empty($payment['name'])) {
-                throw new \Exception('Le nom du mode de paiement à l\'index ' . $index . ' est obligatoire');
-            }
-            if (!isset($payment['amount']) || $payment['amount'] < 0) {
-                throw new \Exception('Le montant du paiement à l\'index ' . $index . ' est invalide');
+                if (!isset($payment['amount']) || !is_numeric($payment['amount'])) {
+                    throw new \Exception("Le montant du paiement à l'index " . $index . " est invalide");
+                }
             }
         }
 
         return $data;
+    }
+
+    /**
+     * Gérer les erreurs de l'API.
+     *
+     * @param RequestException $e L'exception de requête.
+     * @return array<string, mixed> Les détails de l'erreur.
+     */
+    private function handleError(RequestException $e): array
+    {
+        $response = $e->getResponse();
+        $body = null;
+        
+        if ($response) {
+            $statusCode = $response->getStatusCode();
+            $body = $response->getBody()->getContents();
+            $data = (array) json_decode($body, true);
+
+            if ($statusCode === 401) {
+                return [
+                    'success' => false,
+                    'error' => 'Erreur d\'authentification avec l\'API e-MECeF',
+                    'details' => $data
+                ];
+            }
+
+            return [
+                'success' => false,
+                'status' => $statusCode,
+                'error' => $data['message'] ?? $data['error'] ?? 'Erreur de communication avec l\'API e-MECeF',
+                'details' => $data
+            ];
+        }
+
+        return [
+            'success' => false,
+            'error' => 'Erreur de communication avec l\'API e-MECeF: ' . $e->getMessage(),
+        ];
     }
 }
