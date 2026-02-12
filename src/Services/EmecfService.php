@@ -58,9 +58,9 @@ class EmecfService
     public const PAYMENT_TYPES = [
         'ESPECES' => 'Espèces',
         'VIREMENT' => 'Virement',
-        'CARTE_BANCAIRE' => 'Carte bancaire',
-        'MOBILE_MONEY' => 'Mobile Money',
-        'CHEQUE' => 'Chèque',
+        'CARTEBANCAIRE' => 'Carte bancaire',
+        'MOBILEMONEY' => 'Mobile Money',
+        'CHEQUES' => 'Chèques',
         'CREDIT' => 'Crédit',
         'AUTRE' => 'Autre'
     ];
